@@ -15,44 +15,42 @@ class AppRouter {
 
   late final GoRouter router = GoRouter(
     refreshListenable: authProvider,
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: false,
     initialLocation: '/',
     redirect: (BuildContext context, GoRouterState state) async {
+      final location = state.matchedLocation;
       final isAuthenticated = authProvider.isAuthenticated;
       final isOnboardingComplete = await OnboardingProvider.isOnboardingComplete();
-      
-      // Get current location
-      final isGoingToSplash = state.matchedLocation == '/';
-      final isGoingToOnboarding = state.matchedLocation == '/onboarding';
-      final isGoingToHome = state.matchedLocation == '/home';
 
-      // Splash screen logic
-      if (isGoingToSplash) {
-        return null; // Let splash screen handle navigation
+      // Public routes (accessible without authentication)
+      final publicRoutes = ['/', '/onboarding', '/login', '/register'];
+      final isPublicRoute = publicRoutes.contains(location);
+
+      // Allow splash screen to handle initial navigation
+      if (location == '/') {
+        return null;
       }
 
-      // If user is authenticated, redirect to home
+      // If authenticated, redirect away from auth screens
+      if (isAuthenticated && (location == '/login' || location == '/register')) {
+        return '/home';
+      }
+
+      // If authenticated, allow access to protected routes
       if (isAuthenticated) {
-        if (!isGoingToHome) {
-          return '/home';
-        }
         return null;
       }
 
-      // If user is not authenticated and onboarding is not complete
-      if (!isOnboardingComplete) {
-        if (!isGoingToOnboarding && !isGoingToSplash) {
-          return '/onboarding';
-        }
-        return null;
+      // Not authenticated - handle onboarding flow
+      if (!isOnboardingComplete && location != '/onboarding') {
+        return '/onboarding';
       }
 
-      // If user is not authenticated and trying to access protected routes
-      if (!isAuthenticated && isGoingToHome) {
+      // Not authenticated - redirect to login for protected routes
+      if (!isPublicRoute) {
         return '/login';
       }
 
-      // Default: no redirect
       return null;
     },
     routes: [

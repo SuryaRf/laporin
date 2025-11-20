@@ -73,6 +73,13 @@ dependencies:
   # Persistent Bottom Navigation Bar
   persistent_bottom_nav_bar: ^6.2.1
 
+  # Firebase
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.0
+  firebase_storage: ^12.3.6
+  firebase_messaging: ^15.1.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

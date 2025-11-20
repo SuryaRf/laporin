@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:laporin/models/user_model.dart';
 import 'package:laporin/models/enums.dart';
+import 'package:laporin/services/firebase_auth_service.dart';
 
 enum AuthStatus {
   uninitialized,
@@ -10,10 +11,13 @@ enum AuthStatus {
 }
 
 class AuthProvider with ChangeNotifier {
+  final FirebaseAuthService _authService = FirebaseAuthService();
+
   AuthStatus _status = AuthStatus.uninitialized;
   User? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _useFirebase = false; // Toggle between Firebase and mock auth
 
   AuthStatus get status => _status;
   User? get currentUser => _currentUser;
@@ -29,38 +33,81 @@ class AuthProvider with ChangeNotifier {
 
   AuthProvider() {
     _checkAuthStatus();
+    _initializeFirebaseListener();
   }
+
+  // Initialize Firebase auth state listener
+  void _initializeFirebaseListener() {
+    _authService.authStateChanges.listen((firebaseUser) async {
+      if (_useFirebase && firebaseUser != null) {
+        // Get user data from Firebase
+        final user = await _authService.getCurrentUser();
+        if (user != null) {
+          _currentUser = user;
+          _status = AuthStatus.authenticated;
+          await _saveUserData(user);
+          notifyListeners();
+        }
+      } else if (_useFirebase && firebaseUser == null) {
+        _currentUser = null;
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+      }
+    });
+  }
+
+  // Enable or disable Firebase authentication
+  void setUseFirebase(bool value) {
+    _useFirebase = value;
+    notifyListeners();
+  }
+
+  bool get useFirebase => _useFirebase;
 
   // Check if user is already logged in
   Future<void> _checkAuthStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id');
-      final email = prefs.getString('user_email');
-      final name = prefs.getString('user_name');
-      final roleStr = prefs.getString('user_role');
+      _useFirebase = prefs.getBool('use_firebase') ?? false;
 
-      if (userId != null && email != null && name != null && roleStr != null) {
-        final role = UserRole.values.firstWhere(
-          (e) => e.name == roleStr,
-          orElse: () => UserRole.mahasiswa,
-        );
-
-        _currentUser = User(
-          id: userId,
-          name: name,
-          email: email,
-          role: role,
-          nim: prefs.getString('user_nim'),
-          nip: prefs.getString('user_nip'),
-          phone: prefs.getString('user_phone'),
-          avatarUrl: prefs.getString('user_avatar'),
-          createdAt: DateTime.now(),
-        );
-
-        _status = AuthStatus.authenticated;
+      if (_useFirebase) {
+        // Check Firebase auth status
+        final user = await _authService.getCurrentUser();
+        if (user != null) {
+          _currentUser = user;
+          _status = AuthStatus.authenticated;
+        } else {
+          _status = AuthStatus.unauthenticated;
+        }
       } else {
-        _status = AuthStatus.unauthenticated;
+        // Check local storage for mock auth
+        final userId = prefs.getString('user_id');
+        final email = prefs.getString('user_email');
+        final name = prefs.getString('user_name');
+        final roleStr = prefs.getString('user_role');
+
+        if (userId != null && email != null && name != null && roleStr != null) {
+          final role = UserRole.values.firstWhere(
+            (e) => e.name == roleStr,
+            orElse: () => UserRole.mahasiswa,
+          );
+
+          _currentUser = User(
+            id: userId,
+            name: name,
+            email: email,
+            role: role,
+            nim: prefs.getString('user_nim'),
+            nip: prefs.getString('user_nip'),
+            phone: prefs.getString('user_phone'),
+            avatarUrl: prefs.getString('user_avatar'),
+            createdAt: DateTime.now(),
+          );
+
+          _status = AuthStatus.authenticated;
+        } else {
+          _status = AuthStatus.unauthenticated;
+        }
       }
       notifyListeners();
     } catch (e) {
@@ -76,60 +123,76 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      if (_useFirebase) {
+        // Use Firebase authentication
+        final user = await _authService.signInWithEmailAndPassword(email, password);
 
-      // TODO: Implement actual API call
-      // For now, just validate email format and password length
-      if (!_isValidEmail(email)) {
-        _errorMessage = 'Email tidak valid';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+        if (user != null) {
+          _currentUser = user;
+          await _saveUserData(user);
+          _status = AuthStatus.authenticated;
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        } else {
+          _errorMessage = 'Login gagal';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      } else {
+        // Use mock authentication
+        await Future.delayed(const Duration(seconds: 2));
 
-      if (password.length < 6) {
-        _errorMessage = 'Password minimal 6 karakter';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+        if (!_isValidEmail(email)) {
+          _errorMessage = 'Email tidak valid';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
 
-      // Mock users for testing
-      User? mockUser = _getMockUser(email, password);
-      
-      if (mockUser != null) {
-        _currentUser = mockUser;
+        if (password.length < 6) {
+          _errorMessage = 'Password minimal 6 karakter';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+
+        // Mock users for testing
+        User? mockUser = _getMockUser(email, password);
+
+        if (mockUser != null) {
+          _currentUser = mockUser;
+          await _saveUserData(_currentUser!);
+          _status = AuthStatus.authenticated;
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        }
+
+        // If not mock user, validate and create dynamic user
+        final userRole = role ?? UserRole.mahasiswa;
+        final userId = DateTime.now().millisecondsSinceEpoch.toString();
+
+        _currentUser = User(
+          id: userId,
+          name: email.split('@')[0],
+          email: email,
+          role: userRole,
+          nim: userRole == UserRole.mahasiswa ? '2341720$userId'.substring(0, 10) : null,
+          nip: userRole == UserRole.dosen ? '198${userId.substring(0, 10)}' : null,
+          createdAt: DateTime.now(),
+        );
+
         await _saveUserData(_currentUser!);
+
         _status = AuthStatus.authenticated;
         _isLoading = false;
         notifyListeners();
         return true;
       }
-
-      // If not mock user, validate and create dynamic user
-      final userRole = role ?? UserRole.mahasiswa;
-      final userId = DateTime.now().millisecondsSinceEpoch.toString();
-      
-      _currentUser = User(
-        id: userId,
-        name: email.split('@')[0],
-        email: email,
-        role: userRole,
-        nim: userRole == UserRole.mahasiswa ? '2341720$userId'.substring(0, 10) : null,
-        nip: userRole == UserRole.dosen ? '198${userId.substring(0, 10)}' : null,
-        createdAt: DateTime.now(),
-      );
-
-      // Save user data
-      await _saveUserData(_currentUser!);
-
-      _status = AuthStatus.authenticated;
-      _isLoading = false;
-      notifyListeners();
-      return true;
     } catch (e) {
-      _errorMessage = 'Login gagal. Silakan coba lagi.';
+      _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
       return false;
@@ -151,69 +214,96 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      if (_useFirebase) {
+        // Use Firebase authentication
+        final user = await _authService.registerWithEmailAndPassword(
+          email: email,
+          password: password,
+          name: name,
+          role: role,
+          nim: nim,
+          nip: nip,
+          phone: phone,
+        );
 
-      // Validate inputs
-      if (name.isEmpty) {
-        _errorMessage = 'Nama tidak boleh kosong';
+        if (user != null) {
+          _currentUser = user;
+          await _saveUserData(user);
+          _status = AuthStatus.authenticated;
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        } else {
+          _errorMessage = 'Registrasi gagal';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      } else {
+        // Use mock authentication
+        await Future.delayed(const Duration(seconds: 2));
+
+        // Validate inputs
+        if (name.isEmpty) {
+          _errorMessage = 'Nama tidak boleh kosong';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+
+        if (!_isValidEmail(email)) {
+          _errorMessage = 'Email tidak valid';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+
+        if (password.length < 6) {
+          _errorMessage = 'Password minimal 6 karakter';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+
+        // Validate NIM for Mahasiswa
+        if (role == UserRole.mahasiswa && (nim == null || nim.isEmpty)) {
+          _errorMessage = 'NIM harus diisi untuk mahasiswa';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+
+        // Validate NIP for Dosen
+        if (role == UserRole.dosen && (nip == null || nip.isEmpty)) {
+          _errorMessage = 'NIP harus diisi untuk dosen';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+
+        // Create user
+        final userId = DateTime.now().millisecondsSinceEpoch.toString();
+        _currentUser = User(
+          id: userId,
+          name: name,
+          email: email,
+          role: role,
+          nim: nim,
+          nip: nip,
+          phone: phone,
+          createdAt: DateTime.now(),
+        );
+
+        // Save user data
+        await _saveUserData(_currentUser!);
+
+        _status = AuthStatus.authenticated;
         _isLoading = false;
         notifyListeners();
-        return false;
+        return true;
       }
-
-      if (!_isValidEmail(email)) {
-        _errorMessage = 'Email tidak valid';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      if (password.length < 6) {
-        _errorMessage = 'Password minimal 6 karakter';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Validate NIM for Mahasiswa
-      if (role == UserRole.mahasiswa && (nim == null || nim.isEmpty)) {
-        _errorMessage = 'NIM harus diisi untuk mahasiswa';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Validate NIP for Dosen
-      if (role == UserRole.dosen && (nip == null || nip.isEmpty)) {
-        _errorMessage = 'NIP harus diisi untuk dosen';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Create user
-      final userId = DateTime.now().millisecondsSinceEpoch.toString();
-      _currentUser = User(
-        id: userId,
-        name: name,
-        email: email,
-        role: role,
-        nim: nim,
-        nip: nip,
-        phone: phone,
-        createdAt: DateTime.now(),
-      );
-
-      // Save user data
-      await _saveUserData(_currentUser!);
-
-      _status = AuthStatus.authenticated;
-      _isLoading = false;
-      notifyListeners();
-      return true;
     } catch (e) {
-      _errorMessage = 'Registrasi gagal. Silakan coba lagi.';
+      _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
       return false;
@@ -227,6 +317,7 @@ class AuthProvider with ChangeNotifier {
     await prefs.setString('user_email', user.email);
     await prefs.setString('user_name', user.name);
     await prefs.setString('user_role', user.role.name);
+    await prefs.setBool('use_firebase', _useFirebase);
     if (user.nim != null) await prefs.setString('user_nim', user.nim!);
     if (user.nip != null) await prefs.setString('user_nip', user.nip!);
     if (user.phone != null) await prefs.setString('user_phone', user.phone!);
@@ -247,8 +338,15 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      if (_useFirebase) {
+        // Update in Firebase
+        await _authService.updateUserProfile(
+          userId: _currentUser!.id,
+          name: name,
+          phone: phone,
+          avatarUrl: avatarUrl,
+        );
+      }
 
       _currentUser = _currentUser!.copyWith(
         name: name,
@@ -275,6 +373,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      if (_useFirebase) {
+        await _authService.signOut();
+      }
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
