@@ -122,9 +122,8 @@ class FirestoreService {
 
       return {
         'total': reports.length,
-        'pending': reports.where((r) => r.status == ReportStatus.pending).length,
-        'in_progress': reports.where((r) => r.status == ReportStatus.inProgress).length,
-        'resolved': reports.where((r) => r.status == ReportStatus.resolved).length,
+        'inProgress': reports.where((r) => r.status == ReportStatus.inProgress).length,
+        'approved': reports.where((r) => r.status == ReportStatus.approved).length,
         'rejected': reports.where((r) => r.status == ReportStatus.rejected).length,
       };
     } catch (e) {
@@ -243,6 +242,92 @@ class FirestoreService {
       await batch.commit();
     } catch (e) {
       throw 'Gagal memperbarui laporan: $e';
+    }
+  }
+
+  // ========== ADMIN ==========
+
+  // Get admin by identity number (NIP)
+  Future<List<Map<String, dynamic>>> getAdminByIdentity(String identityNumber) async {
+    try {
+      final snapshot = await _firestore
+          .collection('admins')
+          .where('nip', isEqualTo: identityNumber)
+          .limit(1)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          ...doc.data(),
+        };
+      }).toList();
+    } catch (e) {
+      throw 'Gagal mencari admin: $e';
+    }
+  }
+
+  // Create admin account
+  Future<String> createAdmin({
+    required String name,
+    required String nip,
+    required String password,
+    String? email,
+    String? phone,
+  }) async {
+    try {
+      final docRef = await _firestore.collection('admins').add({
+        'name': name,
+        'nip': nip,
+        'password': password, // Note: Should be hashed in production
+        'email': email,
+        'phone': phone,
+        'role': 'admin',
+        'avatar_url': null,
+        'created_at': FieldValue.serverTimestamp(),
+      });
+      return docRef.id;
+    } catch (e) {
+      throw 'Gagal membuat admin: $e';
+    }
+  }
+
+  // Get all users for user management (Admin only)
+  Future<List<Map<String, dynamic>>> getAllUsersForManagement() async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .orderBy('created_at', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          ...doc.data(),
+        };
+      }).toList();
+    } catch (e) {
+      throw 'Gagal mengambil data user: $e';
+    }
+  }
+
+  // Create user (Admin only)
+  Future<String> createUser(Map<String, dynamic> userData) async {
+    try {
+      userData['created_at'] = FieldValue.serverTimestamp();
+      final docRef = await _firestore.collection('users').add(userData);
+      return docRef.id;
+    } catch (e) {
+      throw 'Gagal membuat user: $e';
+    }
+  }
+
+  // Delete user (Admin only)
+  Future<void> deleteUser(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).delete();
+    } catch (e) {
+      throw 'Gagal menghapus user: $e';
     }
   }
 }

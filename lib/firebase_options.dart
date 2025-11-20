@@ -21,10 +21,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.macOS:
         return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -38,38 +35,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    measurementId: 'YOUR_MEASUREMENT_ID',
+    apiKey: 'AIzaSyBlXOhL32ytjS_0aOGrwh3zUPX1kf6A0FM',
+    appId: '1:168654237897:web:8ea56bb268adbf3f7f5d18',
+    messagingSenderId: '168654237897',
+    projectId: 'laporin-b4a18',
+    authDomain: 'laporin-b4a18.firebaseapp.com',
+    storageBucket: 'laporin-b4a18.firebasestorage.app',
+    measurementId: 'G-LWYJPRQLX3',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: 'YOUR_ANDROID_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyDsSID1TnbC5Djrna__6g8zVQalZDsgpzE',
+    appId: '1:168654237897:android:d448cae830ddb42e7f5d18',
+    messagingSenderId: '168654237897',
+    projectId: 'laporin-b4a18',
+    storageBucket: 'laporin-b4a18.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyCdsrOKlyKOEUVfAOK43chjJl404aU0Pg8',
+    appId: '1:168654237897:ios:31df9240492bf2b47f5d18',
+    messagingSenderId: '168654237897',
+    projectId: 'laporin-b4a18',
+    storageBucket: 'laporin-b4a18.firebasestorage.app',
     iosBundleId: 'com.example.laporin',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_MACOS_API_KEY',
-    appId: 'YOUR_MACOS_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyCdsrOKlyKOEUVfAOK43chjJl404aU0Pg8',
+    appId: '1:168654237897:ios:31df9240492bf2b47f5d18',
+    messagingSenderId: '168654237897',
+    projectId: 'laporin-b4a18',
+    storageBucket: 'laporin-b4a18.firebasestorage.app',
     iosBundleId: 'com.example.laporin',
   );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyBlXOhL32ytjS_0aOGrwh3zUPX1kf6A0FM',
+    appId: '1:168654237897:web:7febe5f00f96acae7f5d18',
+    messagingSenderId: '168654237897',
+    projectId: 'laporin-b4a18',
+    authDomain: 'laporin-b4a18.firebaseapp.com',
+    storageBucket: 'laporin-b4a18.firebasestorage.app',
+    measurementId: 'G-LY782K91QC',
+  );
+
 }

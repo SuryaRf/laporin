@@ -43,6 +43,49 @@ class FirebaseAuthService {
     }
   }
 
+  // Register with email and password only (simplified)
+  Future<User?> registerSimple({
+    required String email,
+    required String password,
+  }) async {
+    firebase_auth.UserCredential? credential;
+    try {
+      // Create Firebase Auth user
+      credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (credential.user != null) {
+        // Create basic user document in Firestore (without name/role)
+        final user = User(
+          id: credential.user!.uid,
+          name: 'User', // Default name, will be updated in profile
+          email: email,
+          role: UserRole.mahasiswa, // Default role, will be updated in profile
+          createdAt: DateTime.now(),
+        );
+
+        await _firestore.collection('users').doc(user.id).set(user.toJson());
+
+        return user;
+      }
+      return null;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      // Delete user if Firestore creation fails
+      if (credential?.user != null) {
+        await credential!.user!.delete();
+      }
+      throw _handleAuthException(e);
+    } catch (e) {
+      // Delete user if Firestore creation fails
+      if (credential?.user != null) {
+        await credential!.user!.delete();
+      }
+      throw 'Terjadi kesalahan saat registrasi';
+    }
+  }
+
   // Register with email and password
   Future<User?> registerWithEmailAndPassword({
     required String email,
@@ -53,9 +96,10 @@ class FirebaseAuthService {
     String? nip,
     String? phone,
   }) async {
+    firebase_auth.UserCredential? credential;
     try {
       // Create Firebase Auth user
-      final credential = await _auth.createUserWithEmailAndPassword(
+      credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -83,14 +127,14 @@ class FirebaseAuthService {
       return null;
     } on firebase_auth.FirebaseAuthException catch (e) {
       // Delete user if Firestore creation fails
-      if (credential.user != null) {
-        await credential.user!.delete();
+      if (credential?.user != null) {
+        await credential!.user!.delete();
       }
       throw _handleAuthException(e);
     } catch (e) {
       // Delete user if Firestore creation fails
-      if (credential.user != null) {
-        await credential.user!.delete();
+      if (credential?.user != null) {
+        await credential!.user!.delete();
       }
       throw 'Terjadi kesalahan saat registrasi';
     }

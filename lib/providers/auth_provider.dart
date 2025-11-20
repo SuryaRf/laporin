@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:laporin/models/user_model.dart';
 import 'package:laporin/models/enums.dart';
 import 'package:laporin/services/firebase_auth_service.dart';
+import 'package:laporin/services/firestore_service.dart';
 
 enum AuthStatus {
   uninitialized,
@@ -12,6 +13,7 @@ enum AuthStatus {
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuthService _authService = FirebaseAuthService();
+  final FirestoreService _firestoreService = FirestoreService();
 
   AuthStatus _status = AuthStatus.uninitialized;
   User? _currentUser;
@@ -32,6 +34,7 @@ class AuthProvider with ChangeNotifier {
   bool get isDosen => _currentUser?.role == UserRole.dosen;
 
   AuthProvider() {
+    _useFirebase = true; // Enable Firebase by default
     _checkAuthStatus();
     _initializeFirebaseListener();
   }
@@ -466,5 +469,207 @@ class AuthProvider with ChangeNotifier {
   // Check if user can create reports
   bool canCreateReports() {
     return _currentUser != null;
+  }
+
+  // Login User (Mahasiswa & Civitas Akademika) using Firebase Auth
+  Future<bool> loginUser(String email, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Always use Firebase authentication for users
+      final user = await _authService.signInWithEmailAndPassword(email, password);
+
+      if (user != null) {
+        // Ensure the user is not admin
+        if (user.role == UserRole.admin) {
+          _errorMessage = 'Akun admin tidak dapat login sebagai user';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+
+        _currentUser = user;
+        await _saveUserData(user);
+        _status = AuthStatus.authenticated;
+        _useFirebase = true;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = 'Email atau password salah';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Login gagal: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Register with email and password only (simplified)
+  Future<bool> registerSimple(String email, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Use Firebase authentication
+      final user = await _authService.registerSimple(
+        email: email,
+        password: password,
+      );
+
+      if (user != null) {
+        _currentUser = user;
+        await _saveUserData(user);
+        _status = AuthStatus.authenticated;
+        _useFirebase = true;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = 'Registrasi gagal';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Registrasi gagal: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Update user profile with complete data
+  Future<bool> completeProfile({
+    required String name,
+    required UserRole role,
+    String? nim,
+    String? nip,
+    String? phone,
+  }) async {
+    if (_currentUser == null) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Update in Firebase
+      if (_useFirebase) {
+        await _authService.updateUserProfile(
+          userId: _currentUser!.id,
+          name: name,
+          phone: phone,
+        );
+
+        // Update user document with role and identifiers
+        await _firestoreService.updateUser(_currentUser!.id, {
+          'name': name,
+          'role': role.name,
+          'nim': nim,
+          'nip': nip,
+          'phone': phone,
+        });
+      }
+
+      _currentUser = _currentUser!.copyWith(
+        name: name,
+        role: role,
+        nim: nim,
+        nip: nip,
+        phone: phone,
+      );
+
+      await _saveUserData(_currentUser!);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Update profil gagal: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Login Admin using Firestore data (no Firebase Auth)
+  Future<bool> loginAdmin(String identityNumber, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Query Firestore for admin with matching identity number
+      final admins = await _firestoreService.getAdminByIdentity(identityNumber);
+
+      if (admins.isEmpty) {
+        _errorMessage = 'Admin tidak ditemukan';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final admin = admins.first;
+
+      // Verify password (stored in Firestore)
+      // Note: In production, passwords should be hashed
+      if (admin['password'] != password) {
+        _errorMessage = 'Password salah';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Create User object from Firestore data
+      _currentUser = User(
+        id: admin['id'],
+        name: admin['name'],
+        email: admin['email'] ?? 'admin@laporin.com',
+        role: UserRole.admin,
+        nip: admin['nip'],
+        phone: admin['phone'],
+        avatarUrl: admin['avatar_url'],
+        createdAt: (admin['created_at'] as dynamic).toDate(),
+      );
+
+      await _saveUserData(_currentUser!);
+      _status = AuthStatus.authenticated;
+      _useFirebase = false;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      // Fallback to mock admin for development
+      if (identityNumber == 'ADM001' && password == 'admin123') {
+        _currentUser = User(
+          id: 'admin001',
+          name: 'Admin Laporin',
+          email: 'admin@laporin.com',
+          role: UserRole.admin,
+          nip: 'ADM001',
+          phone: '081234567890',
+          createdAt: DateTime.now(),
+        );
+
+        await _saveUserData(_currentUser!);
+        _status = AuthStatus.authenticated;
+        _useFirebase = false;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
+      _errorMessage = 'Login admin gagal: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }
