@@ -8,17 +8,23 @@ import 'package:laporin/providers/auth_provider.dart';
 import 'package:laporin/providers/onboarding_provider.dart';
 import 'package:laporin/providers/report_provider.dart';
 import 'package:laporin/routes/app_router.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  // Initialize Firebase with proper configuration
+  bool isFirebaseInitialized = false;
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    isFirebaseInitialized = true;
     debugPrint('✅ Firebase initialized successfully');
   } catch (e) {
     debugPrint('⚠️ Firebase initialization failed: $e');
     debugPrint('📝 App will run in mock mode without Firebase');
+    isFirebaseInitialized = false;
   }
 
   // Set preferred orientations
@@ -37,19 +43,25 @@ void main() async {
     ),
   );
 
-  runApp(const MyApp());
+  runApp(MyApp(isFirebaseEnabled: isFirebaseInitialized));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isFirebaseEnabled;
+
+  const MyApp({super.key, required this.isFirebaseEnabled});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(),
+        ),
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),
-        ChangeNotifierProvider(create: (_) => ReportProvider()),
+        ChangeNotifierProvider(
+          create: (_) => ReportProvider(),
+        ),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
