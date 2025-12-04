@@ -1374,7 +1374,7 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Video tidak dapat diputar',
+                    'Video tidak dapat diputar ',
                     style: AppTextStyles.body.copyWith(color: AppColors.white),
                   ),
                 ],
