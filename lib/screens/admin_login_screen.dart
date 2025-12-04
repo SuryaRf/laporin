@@ -117,21 +117,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   const SizedBox(height: 12),
 
                   // Lupa Password Link
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        context.push('/login/admin/forgot-password');
-                      },
-                      child: Text(
-                        'Lupa Password?',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.secondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
+                  
                   const SizedBox(height: 20),
 
                   // Title
@@ -140,7 +126,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
                   // Email Field
                   Text(
-                    'Email',
+                    'email',
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -275,34 +261,49 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           ),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () async {
-                          final authProvider = context.read<AuthProvider>();
-                          await authProvider.clearSavedAdminCredentials();
-                          setState(() {
-                            _emailController.clear();
-                            _passwordController.clear();
-                            _rememberMe = false;
-                          });
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Kredensial tersimpan telah dihapus',
-                                ),
-                                backgroundColor: AppColors.success,
-                              ),
-                            );
-                          }
-                        },
-                        child: Text(
-                          'Hapus',
-                          style: TextStyle(
-                            color: AppColors.error,
-                            fontSize: 12,
-                          ),
+                      Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        context.push('/login/admin/forgot-password');
+                      },
+                      child: Text(
+                        'Lupa Password?',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                    ),
+                  ),
+                      // TextButton(
+                      //   onPressed: () async {
+                      //     final authProvider = context.read<AuthProvider>();
+                      //     await authProvider.clearSavedAdminCredentials();
+                      //     setState(() {
+                      //       _emailController.clear();
+                      //       _passwordController.clear();
+                      //       _rememberMe = false;
+                      //     });
+                      //     if (mounted) {
+                      //       ScaffoldMessenger.of(context).showSnackBar(
+                      //         const SnackBar(
+                      //           content: Text(
+                      //             'Kredensial tersimpan telah dihapus',
+                      //           ),
+                      //           backgroundColor: AppColors.success,
+                      //         ),
+                      //       );
+                      //     }
+                      //   },
+                      //   child: Text(
+                      //     'Hapus',
+                      //     style: TextStyle(
+                      //       color: const Color.fromARGB(255, 73, 68, 68),
+                      //       fontSize: 12,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                   const SizedBox(height: 32),

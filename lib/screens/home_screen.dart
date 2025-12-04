@@ -11,6 +11,7 @@ import 'package:laporin/screens/create_report_screen.dart';
 import 'package:laporin/screens/report_list_screen.dart';
 import 'package:laporin/screens/report_detail_screen.dart';
 import 'package:laporin/screens/admin_dashboard_screen.dart';
+import 'package:laporin/screens/user/notification_screen.dart';
 import 'package:laporin/widgets/profile_drawer.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -226,8 +227,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AuthProvider, ReportProvider>(
-      builder: (context, authProvider, reportProvider, _) {
+    return Consumer3<AuthProvider, ReportProvider, NotificationProvider>(
+      builder: (context, authProvider, reportProvider, notificationProvider, _) {
         final user = authProvider.currentUser;
         final stats = reportProvider.getReportStats();
 
@@ -270,27 +271,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
             ),
-            leading: Builder(
-              builder: (context) => IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.white.withOpacity(0.4),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.menu_rounded,
-                    color: AppColors.white,
-                    size: 24,
-                  ),
-                ),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-            ),
+            
             title: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -375,38 +356,46 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                     onPressed: () {
-                      // TODO: Navigate to notifications
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationScreen(),
+                        ),
+                      );
                     },
                   ),
-                  Positioned(
-                    right: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.error,
-                            AppColors.error.withOpacity(0.8),
+                  if (notificationProvider.unreadCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.error,
+                              AppColors.error.withOpacity(0.8),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.white,
+                            width: 2.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.error.withOpacity(0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
                           ],
                         ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.white,
-                          width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.error.withOpacity(0.5),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        '3',
-                        style: TextStyle(
-                          color: AppColors.white,
+                        child: Text(
+                          notificationProvider.unreadCount > 99
+                            ? '99+'
+                            : '${notificationProvider.unreadCount}',
+                          style: const TextStyle(
+                            color: AppColors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                         ),
@@ -428,7 +417,6 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(width: 8),
             ],
           ),
-          drawer: const ProfileDrawer(),
           body: RefreshIndicator(
             onRefresh: () => reportProvider.fetchReports(),
             color: AppColors.primary,
@@ -1022,7 +1010,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     child: Center(
                       child: Text(
-                        report.category.icon,
+                        report.category.emoji,
                         style: const TextStyle(fontSize: 26),
                       ),
                     ),

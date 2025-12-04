@@ -282,10 +282,9 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        report.category.icon,
-                        size: 14,
-                        color: report.category.color,
+                      Text(
+                        report.category.emoji,
+                        style: const TextStyle(fontSize: 14),
                       ),
                       const SizedBox(width: 4),
                       Text(

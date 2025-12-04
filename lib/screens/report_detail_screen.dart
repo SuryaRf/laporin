@@ -785,10 +785,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                               ],
                             ),
                           ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 3),
                         if (_report!.media.where((m) => m.type == MediaType.video).isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                             decoration: BoxDecoration(
                               color: AppColors.error.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
@@ -1372,9 +1372,9 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
                     size: 64,
                     color: AppColors.error,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   Text(
-                    'Video tidak dapat diputar',
+                    'Video tidak dapat diputar ',
                     style: AppTextStyles.body.copyWith(color: AppColors.white),
                   ),
                 ],
@@ -1388,7 +1388,7 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
                         aspectRatio: _controller.value.aspectRatio,
                         child: VideoPlayer(_controller),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 3),
                       // Video controls
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
