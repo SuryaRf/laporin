@@ -22,6 +22,12 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
 
+  static TextStyle h4 = GoogleFonts.poppins(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
   // Body Text
   static TextStyle bodyLarge = GoogleFonts.poppins(
     fontSize: 16,

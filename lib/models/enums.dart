@@ -71,7 +71,7 @@ enum ReportCategory {
     }
   }
 
-  String get icon {
+  String get emoji {
     switch (this) {
       case ReportCategory.kerusakan:
         return '🔧';
@@ -83,6 +83,36 @@ enum ReportCategory {
         return '🏢';
       case ReportCategory.lainnya:
         return '📋';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ReportCategory.kerusakan:
+        return Icons.build_outlined;
+      case ReportCategory.keamanan:
+        return Icons.security_outlined;
+      case ReportCategory.kebersihan:
+        return Icons.cleaning_services_outlined;
+      case ReportCategory.fasilitas:
+        return Icons.business_outlined;
+      case ReportCategory.lainnya:
+        return Icons.more_horiz_outlined;
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case ReportCategory.kerusakan:
+        return AppColors.warning;
+      case ReportCategory.keamanan:
+        return AppColors.error;
+      case ReportCategory.kebersihan:
+        return Colors.green;
+      case ReportCategory.fasilitas:
+        return AppColors.primary;
+      case ReportCategory.lainnya:
+        return AppColors.textSecondary;
     }
   }
 }
@@ -115,14 +145,25 @@ enum ReportStatus {
     }
   }
 
-  String get color {
+  Color get color {
     switch (this) {
       case ReportStatus.inProgress:
-        return 'warning'; // Orange/kuning untuk menunggu
+        return AppColors.warning; // Orange/kuning untuk menunggu
       case ReportStatus.approved:
-        return 'success';
+        return AppColors.success;
       case ReportStatus.rejected:
-        return 'error';
+        return AppColors.error;
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ReportStatus.inProgress:
+        return Icons.pending_outlined;
+      case ReportStatus.approved:
+        return Icons.check_circle_outline;
+      case ReportStatus.rejected:
+        return Icons.cancel_outlined;
     }
   }
 
@@ -178,16 +219,29 @@ enum ReportPriority {
     }
   }
 
-  String get color {
+  Color get color {
     switch (this) {
       case ReportPriority.low:
-        return 'success';
+        return AppColors.success;
       case ReportPriority.medium:
-        return 'info';
+        return Colors.blue;
       case ReportPriority.high:
-        return 'warning';
+        return AppColors.warning;
       case ReportPriority.urgent:
-        return 'error';
+        return AppColors.error;
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ReportPriority.low:
+        return Icons.flag_outlined;
+      case ReportPriority.medium:
+        return Icons.flag_outlined;
+      case ReportPriority.high:
+        return Icons.flag;
+      case ReportPriority.urgent:
+        return Icons.flag;
     }
   }
 }

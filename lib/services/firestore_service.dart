@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:laporin/models/report_model.dart';
 import 'package:laporin/models/user_model.dart';
 import 'package:laporin/models/enums.dart';
+import 'package:laporin/models/notification_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -398,6 +399,88 @@ class FirestoreService {
       return filteredUsers;
     } catch (e) {
       throw 'Gagal mencari user: $e';
+    }
+  }
+
+  // ========== NOTIFICATIONS ==========
+
+  // Create a notification
+  Future<String> createNotification(NotificationModel notification) async {
+    try {
+      final docRef = await _firestore.collection('notifications').add(notification.toJson());
+      return docRef.id;
+    } catch (e) {
+      throw 'Gagal membuat notifikasi: $e';
+    }
+  }
+
+  // Get notifications by user ID
+  Stream<List<NotificationModel>> getNotificationsByUserId(String userId) {
+    return _firestore
+        .collection('notifications')
+        .where('user_id', isEqualTo: userId)
+        .orderBy('created_at', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => NotificationModel.fromJson({
+                  ...doc.data(),
+                  'id': doc.id,
+                }))
+            .toList());
+  }
+
+  // Mark notification as read
+  Future<void> markNotificationAsRead(String notificationId) async {
+    try {
+      await _firestore.collection('notifications').doc(notificationId).update({
+        'is_read': true,
+      });
+    } catch (e) {
+      throw 'Gagal menandai notifikasi: $e';
+    }
+  }
+
+  // Mark all notifications as read for a user
+  Future<void> markAllNotificationsAsRead(String userId) async {
+    try {
+      final batch = _firestore.batch();
+      final snapshot = await _firestore
+          .collection('notifications')
+          .where('user_id', isEqualTo: userId)
+          .where('is_read', isEqualTo: false)
+          .get();
+
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {'is_read': true});
+      }
+
+      await batch.commit();
+    } catch (e) {
+      throw 'Gagal menandai semua notifikasi: $e';
+    }
+  }
+
+  // Delete notification
+  Future<void> deleteNotification(String notificationId) async {
+    try {
+      await _firestore.collection('notifications').doc(notificationId).delete();
+    } catch (e) {
+      throw 'Gagal menghapus notifikasi: $e';
+    }
+  }
+
+  // Get unread notification count
+  Future<int> getUnreadNotificationCount(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('notifications')
+          .where('user_id', isEqualTo: userId)
+          .where('is_read', isEqualTo: false)
+          .count()
+          .get();
+      return snapshot.count ?? 0;
+    } catch (e) {
+      return 0;
     }
   }
 }

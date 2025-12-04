@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:laporin/providers/auth_provider.dart';
+import 'package:laporin/providers/notification_provider.dart';
 import 'package:laporin/constants/colors.dart';
 import 'package:laporin/constants/text_styles.dart';
 import 'package:laporin/models/enums.dart';
 import 'package:laporin/screens/create_report_screen.dart';
 import 'package:laporin/screens/admin_dashboard_screen.dart';
+import 'package:laporin/screens/user/user_profile_screen.dart';
+import 'package:laporin/screens/user/notification_screen.dart';
+import 'package:laporin/screens/user/report_history_screen.dart';
+import 'package:laporin/screens/help_screen.dart';
 import 'package:badges/badges.dart' as badges;
 
 class ProfileDrawer extends StatelessWidget {
@@ -161,7 +166,12 @@ class ProfileDrawer extends StatelessWidget {
                 title: 'Profil Saya',
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to profile screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UserProfileScreen(),
+                    ),
+                  );
                 },
               ),
               if (authProvider.canCreateReports())
@@ -180,10 +190,15 @@ class ProfileDrawer extends StatelessWidget {
                 ),
               _buildMenuItem(
                 icon: Icons.assignment_outlined,
-                title: 'Laporan Saya',
+                title: 'Riwayat Laporan',
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to my reports screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ReportHistoryScreen(),
+                    ),
+                  );
                 },
               ),
               if (authProvider.canManageReports())
@@ -201,28 +216,37 @@ class ProfileDrawer extends StatelessWidget {
                   },
                 ),
               const Divider(height: 32),
-              _buildMenuItem(
-                icon: Icons.settings_outlined,
-                title: 'Pengaturan',
-                onTap: () {
-                  Navigator.pop(context);
-                  // TODO: Navigate to settings screen
+              Consumer<NotificationProvider>(
+                builder: (context, notificationProvider, child) {
+                  return _buildMenuItem(
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifikasi',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                    badge: notificationProvider.unreadCount > 0
+                        ? notificationProvider.unreadCount.toString()
+                        : null,
+                  );
                 },
               ),
               _buildMenuItem(
                 icon: Icons.help_outline_rounded,
-                title: 'Bantuan',
+                title: 'Bantuan & FAQ',
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to help screen
-                },
-              ),
-              _buildMenuItem(
-                icon: Icons.info_outline_rounded,
-                title: 'Tentang',
-                onTap: () {
-                  Navigator.pop(context);
-                  // TODO: Navigate to about screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HelpScreen(),
+                    ),
+                  );
                 },
               ),
               const Divider(height: 32),
@@ -250,6 +274,7 @@ class ProfileDrawer extends StatelessWidget {
     required VoidCallback onTap,
     Color? titleColor,
     Color? iconColor,
+    String? badge,
   }) {
     return ListTile(
       leading: Icon(icon, color: iconColor ?? AppColors.textPrimary),
@@ -260,6 +285,22 @@ class ProfileDrawer extends StatelessWidget {
           fontWeight: FontWeight.w500,
         ),
       ),
+      trailing: badge != null
+          ? badges.Badge(
+              badgeContent: Text(
+                badge,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              badgeStyle: const badges.BadgeStyle(
+                badgeColor: AppColors.error,
+                padding: EdgeInsets.all(6),
+              ),
+            )
+          : null,
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),

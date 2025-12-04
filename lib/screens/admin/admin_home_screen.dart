@@ -769,7 +769,7 @@ class _AdminReportsTabState extends State<AdminReportsTab> {
                     ),
                     child: Center(
                       child: Text(
-                        report.category.icon,
+                        report.category.emoji,
                         style: const TextStyle(fontSize: 24),
                       ),
                     ),
@@ -975,7 +975,7 @@ class _AdminReportsTabState extends State<AdminReportsTab> {
               child: Row(
                 children: [
                   Text(
-                    report.category.icon,
+                    report.category.emoji,
                     style: const TextStyle(fontSize: 24),
                   ),
                   const SizedBox(width: 12),
@@ -1070,7 +1070,7 @@ class _AdminReportsTabState extends State<AdminReportsTab> {
               child: Row(
                 children: [
                   Text(
-                    report.category.icon,
+                    report.category.emoji,
                     style: const TextStyle(fontSize: 24),
                   ),
                   const SizedBox(width: 12),

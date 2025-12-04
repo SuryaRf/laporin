@@ -458,7 +458,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                     value: category,
                     child: Row(
                       children: [
-                        Text(category.icon, style: const TextStyle(fontSize: 20)),
+                        Text(category.emoji, style: const TextStyle(fontSize: 20)),
                         const SizedBox(width: 8),
                         Text(category.displayName),
                       ],

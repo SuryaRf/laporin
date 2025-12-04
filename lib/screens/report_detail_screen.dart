@@ -474,7 +474,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            _report!.category.icon,
+                            _report!.category.emoji,
                             style: const TextStyle(fontSize: 32),
                           ),
                         ),
@@ -493,7 +493,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                             const SizedBox(height: 4),
                             badges.Badge(
                               badgeContent: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 3),
                                 child: Text(
                                   _report!.status.displayName,
                                   style: AppTextStyles.caption.copyWith(
@@ -502,13 +502,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                                   ),
                                 ),
                               ),
-                              badgeStyle: badges.BadgeStyle(
-                                badgeColor: AppColors.white.withValues(alpha: 0.3),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                              ),
+              
                             ),
                           ],
                         ),

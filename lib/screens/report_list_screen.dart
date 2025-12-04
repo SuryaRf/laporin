@@ -387,7 +387,7 @@ class _ReportListScreenState extends State<ReportListScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        report.category.icon,
+                        report.category.emoji,
                         style: const TextStyle(fontSize: 24),
                       ),
                     ),

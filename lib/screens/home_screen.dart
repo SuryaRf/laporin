@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:laporin/providers/auth_provider.dart';
 import 'package:laporin/providers/report_provider.dart';
+import 'package:laporin/providers/notification_provider.dart';
 import 'package:laporin/constants/colors.dart';
 import 'package:laporin/constants/text_styles.dart';
 import 'package:laporin/models/enums.dart';
@@ -38,9 +39,15 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     });
-    // Load reports when screen initializes
+    // Load reports and notifications when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
       context.read<ReportProvider>().fetchReports();
+
+      // Fetch notifications if user is logged in
+      if (authProvider.currentUser != null) {
+        context.read<NotificationProvider>().fetchNotifications(authProvider.currentUser!.id);
+      }
     });
   }
 

@@ -4,6 +4,7 @@ import 'package:laporin/models/enums.dart';
 import 'package:laporin/models/user_model.dart';
 import 'package:laporin/models/location_model.dart';
 import 'package:laporin/models/media_model.dart';
+import 'package:laporin/models/notification_model.dart';
 import 'package:laporin/services/firestore_service.dart';
 import 'dart:async';
 
@@ -256,11 +257,30 @@ class ReportProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Get report details first
+      final report = await _firestoreService.getReportById(reportId);
+
       await _firestoreService.updateReport(reportId, {
         'status': ReportStatus.approved.name,
         'approved_by': adminId,
         'approved_at': DateTime.now().toIso8601String(),
       });
+
+      // Create notification for user
+      if (report != null) {
+        final notification = NotificationModel(
+          id: '',
+          userId: report.reporter.id,
+          title: 'Laporan Disetujui',
+          message: 'Laporan "${report.title}" telah disetujui oleh admin.',
+          type: NotificationType.reportApproved,
+          reportId: reportId,
+          reportTitle: report.title,
+          createdAt: DateTime.now(),
+        );
+
+        await _firestoreService.createNotification(notification);
+      }
 
       _isLoading = false;
       notifyListeners();
@@ -280,10 +300,30 @@ class ReportProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Get report details first
+      final report = await _firestoreService.getReportById(reportId);
+
       await _firestoreService.updateReport(reportId, {
         'status': ReportStatus.rejected.name,
         'admin_note': adminNote,
       });
+
+      // Create notification for user
+      if (report != null) {
+        final notification = NotificationModel(
+          id: '',
+          userId: report.reporter.id,
+          title: 'Laporan Ditolak',
+          message: 'Laporan "${report.title}" ditolak. ${adminNote.isNotEmpty ? "Alasan: $adminNote" : ""}',
+          type: NotificationType.reportRejected,
+          reportId: reportId,
+          reportTitle: report.title,
+          createdAt: DateTime.now(),
+          metadata: {'admin_note': adminNote},
+        );
+
+        await _firestoreService.createNotification(notification);
+      }
 
       _isLoading = false;
       notifyListeners();
