@@ -756,8 +756,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildFilterChip('Semua', Icons.all_inclusive),
-                      const SizedBox(width: 10),
+
                       _buildFilterChip('Diajukan', Icons.schedule_rounded),
                       const SizedBox(width: 10),
                       _buildFilterChip('Disetujui', Icons.check_circle_rounded),
