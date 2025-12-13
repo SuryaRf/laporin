@@ -12,7 +12,7 @@ import 'package:laporin/screens/report_list_screen.dart';
 import 'package:laporin/screens/report_detail_screen.dart';
 import 'package:laporin/screens/admin_dashboard_screen.dart';
 import 'package:laporin/screens/user/notification_screen.dart';
-import 'package:laporin/widgets/profile_drawer.dart';
+import 'package:laporin/screens/user/user_profile_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
@@ -1416,6 +1416,33 @@ class _ProfilePageState extends State<ProfilePage> {
           SliverAppBar(
             expandedHeight: 250,
             pinned: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.white),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UserProfileScreen(isEditing: true),
+                    ),
+                  );
+                  // Show success message and rebuild if update was successful
+                  if (result == true && context.mounted) {
+                    // Force rebuild to show updated data (no notifyListeners needed)
+                    setState(() {});
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Data berhasil diperbarui'),
+                        backgroundColor: AppColors.success,
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -1493,16 +1520,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 // Info Cards
                 _buildInfoSection(user),
 
-                const SizedBox(height: 16),
-
-                // Statistics
-                _buildStatisticsSection(user),
-
-                const SizedBox(height: 16),
-
-                // Menu Items
-                _buildMenuSection(context, authProvider),
-
                 const SizedBox(height: 20),
 
                 // Logout Button
@@ -1546,12 +1563,13 @@ class _ProfilePageState extends State<ProfilePage> {
               color: AppColors.success,
             ).animate().fadeIn(delay: 200.ms, duration: 300.ms).slideX(begin: -0.2, end: 0),
           if (user.nim != null) const SizedBox(height: 12),
-          _buildInfoCard(
-            icon: Icons.calendar_today_rounded,
-            title: 'Bergabung Sejak',
-            value: DateFormat('dd MMMM yyyy').format(user.createdAt),
-            color: AppColors.warning,
-          ).animate().fadeIn(delay: 300.ms, duration: 300.ms).slideX(begin: -0.2, end: 0),
+          if (user.phone != null && user.phone!.isNotEmpty)
+            _buildInfoCard(
+              icon: Icons.phone_rounded,
+              title: 'Nomor Telepon',
+              value: user.phone!,
+              color: AppColors.info,
+            ).animate().fadeIn(delay: 250.ms, duration: 300.ms).slideX(begin: -0.2, end: 0),
         ],
       ),
     );
@@ -1760,6 +1778,21 @@ class _ProfilePageState extends State<ProfilePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 12),
+          _buildMenuItem(
+            icon: Icons.edit_rounded,
+            title: 'Edit Profil',
+            subtitle: 'Ubah nama, nomor telepon, dan informasi lainnya',
+            color: AppColors.primary,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserProfileScreen(isEditing: true),
+                ),
+              );
+            },
+          ).animate().fadeIn(delay: 50.ms, duration: 300.ms).slideX(begin: 0.2, end: 0),
           const SizedBox(height: 12),
           _buildMenuItem(
             icon: Icons.history_rounded,

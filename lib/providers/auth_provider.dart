@@ -16,6 +16,17 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _useFirebase = false; // Toggle between Firebase and mock auth
+  bool _isUpdatingProfile = false; // Flag to prevent listener from interfering during profile update
+  bool _skipRouterNotification = false; // Flag to skip notifying router
+  
+  // Custom notify that can skip router refresh
+  void notifyListenersExceptRouter() {
+    _skipRouterNotification = true;
+    notifyListeners();
+    _skipRouterNotification = false;
+  }
+  
+  bool get shouldNotifyRouter => !_skipRouterNotification;
 
   AuthStatus get status => _status;
   User? get currentUser => _currentUser;
@@ -42,6 +53,9 @@ class AuthProvider with ChangeNotifier {
   // Initialize Firebase auth state listener
   void _initializeFirebaseListener() {
     _authService.authStateChanges.listen((firebaseUser) async {
+      // Skip listener if currently updating profile to prevent redirect
+      if (_isUpdatingProfile) return;
+      
       if (_useFirebase && firebaseUser != null) {
         // Get user data from Firebase
         final user = await _authService.getCurrentUser();
@@ -380,11 +394,12 @@ class AuthProvider with ChangeNotifier {
     String? name,
     String? phone,
     String? avatarUrl,
+    String? nip,
   }) async {
     if (_currentUser == null) return false;
 
     _isLoading = true;
-    notifyListeners();
+    _isUpdatingProfile = true; // Set flag to prevent listener interference
 
     try {
       if (_useFirebase) {
@@ -394,6 +409,7 @@ class AuthProvider with ChangeNotifier {
           name: name,
           phone: phone,
           avatarUrl: avatarUrl,
+          nip: nip,
         );
       }
 
@@ -401,16 +417,21 @@ class AuthProvider with ChangeNotifier {
         name: name,
         phone: phone,
         avatarUrl: avatarUrl,
+        nip: nip,
       );
 
       await _saveUserData(_currentUser!);
 
       _isLoading = false;
-      notifyListeners();
+      _isUpdatingProfile = false; // Clear flag
+      
+      // Don't call notifyListeners() to avoid triggering router redirect
+      // The UI will be refreshed via setState in the calling screen
       return true;
     } catch (e) {
       _errorMessage = 'Update profil gagal';
       _isLoading = false;
+      _isUpdatingProfile = false; // Clear flag even on error
       notifyListeners();
       return false;
     }
@@ -636,6 +657,7 @@ class AuthProvider with ChangeNotifier {
     String? nim,
     String? nip,
     String? phone,
+    String? avatarUrl,
   }) async {
     if (_currentUser == null) return false;
 
@@ -649,6 +671,7 @@ class AuthProvider with ChangeNotifier {
           userId: _currentUser!.id,
           name: name,
           phone: phone,
+          avatarUrl: avatarUrl,
         );
 
         // Update user document with role and identifiers
@@ -658,6 +681,7 @@ class AuthProvider with ChangeNotifier {
           'nim': nim,
           'nip': nip,
           'phone': phone,
+          if (avatarUrl != null) 'avatarUrl': avatarUrl,
         });
       }
 
@@ -667,6 +691,7 @@ class AuthProvider with ChangeNotifier {
         nim: nim,
         nip: nip,
         phone: phone,
+        avatarUrl: avatarUrl,
       );
 
       await _saveUserData(_currentUser!);

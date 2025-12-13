@@ -7,7 +7,9 @@ import 'package:laporin/providers/auth_provider.dart';
 import 'package:laporin/models/enums.dart';
 
 class UserProfileScreen extends StatefulWidget {
-  const UserProfileScreen({super.key});
+  final bool isEditing;
+  
+  const UserProfileScreen({super.key, this.isEditing = false});
 
   @override
   State<UserProfileScreen> createState() => _UserProfileScreenState();
@@ -33,7 +35,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     // Check if this is first time setup (name is default "User")
     _isFirstTime = user?.name == 'User' || user?.name.isEmpty == true;
-    _isEditing = _isFirstTime;
+    _isEditing = widget.isEditing || _isFirstTime;
     _selectedRole = user?.role ?? UserRole.mahasiswa;
 
     _nameController = TextEditingController(text: user?.name == 'User' ? '' : user?.name ?? '');
@@ -53,11 +55,43 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Apakah Anda yakin ingin keluar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.logout();
+      if (mounted) {
+        context.go('/login-selection');
+      }
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       bool success;
+      final isFirstTimeSetup = _isFirstTime; // Save the original state
 
       if (_isFirstTime) {
         // Complete profile for first time
@@ -65,11 +99,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           name: _nameController.text,
           role: _selectedRole,
           nim: _selectedRole == UserRole.mahasiswa ? _nimController.text : null,
-          nip: _selectedRole == UserRole.dosen ? _nipController.text : null,
+          nip: (_selectedRole == UserRole.dosen || _selectedRole == UserRole.admin) ? _nipController.text : null,
           phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
         );
       } else {
         // Update existing profile
+        // Note: NIP is read-only after first setup, so we keep the existing value
         success = await authProvider.updateProfile(
           name: _nameController.text,
           phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
@@ -82,16 +117,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             _isEditing = false;
             _isFirstTime = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profil berhasil diperbarui'),
-              backgroundColor: AppColors.success,
-            ),
-          );
 
-          // Navigate to home after completing profile for first time
-          if (_isFirstTime) {
+          // Navigate based on original state
+          if (isFirstTimeSetup) {
             context.go('/home');
+          } else {
+            // Just pop back - NO notifyListeners to avoid hot reload
+            Navigator.of(context).pop(true);
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -116,17 +148,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         leading: _isFirstTime ? null : null, // Disable back button on first time
-        actions: [
-          if (!_isEditing && !_isFirstTime)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                });
-              },
-            ),
-        ],
+        actions: const [],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -145,54 +167,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
               child: Column(
                 children: [
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.white,
-                        child: user?.avatarUrl != null
-                            ? ClipOval(
-                                child: Image.network(
-                                  user!.avatarUrl!,
-                                  width: 120,
-                                  height: 120,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Text(
-                                user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                                style: const TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                      ),
-                      if (_isEditing)
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: AppColors.secondary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.camera_alt,
-                                  color: Colors.white, size: 20),
-                              onPressed: () {
-                                // TODO: Implement image picker
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Fitur ganti foto akan segera hadir'),
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.white,
+                    child: user?.avatarUrl != null
+                        ? ClipOval(
+                            child: Image.network(
+                              user!.avatarUrl!,
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Text(
+                                  user.name.substring(0, 1).toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
                                   ),
                                 );
                               },
                             ),
+                          )
+                        : Text(
+                            user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
                           ),
-                        ),
-                    ],
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -306,11 +310,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // NIM (for Mahasiswa)
-                    if (_selectedRole == UserRole.mahasiswa)
+                    // NIM/NIP (Read-only after first setup)
+                    if (_selectedRole == UserRole.mahasiswa && (_nimController.text.isNotEmpty || _isFirstTime))
                       TextFormField(
                         controller: _nimController,
-                        enabled: _isEditing && _isFirstTime,
+                        enabled: _isFirstTime && _isEditing,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: 'NIM',
@@ -319,7 +323,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: (_isEditing && _isFirstTime) ? Colors.white : AppColors.background,
+                          fillColor: (_isFirstTime && _isEditing) ? Colors.white : AppColors.background,
                         ),
                         validator: _isFirstTime
                             ? (value) {
@@ -335,10 +339,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               }
                             : null,
                       ),
-                    if (_selectedRole == UserRole.dosen)
+                    if ((_selectedRole == UserRole.dosen || _selectedRole == UserRole.admin) && (_nipController.text.isNotEmpty || _isFirstTime))
                       TextFormField(
                         controller: _nipController,
-                        enabled: _isEditing && _isFirstTime,
+                        enabled: _isFirstTime && _isEditing,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: 'NIP',
@@ -347,11 +351,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: (_isEditing && _isFirstTime) ? Colors.white : AppColors.background,
+                          fillColor: (_isFirstTime && _isEditing) ? Colors.white : AppColors.background,
                         ),
                         validator: _isFirstTime
                             ? (value) {
-                                if (_selectedRole == UserRole.dosen) {
+                                if (_selectedRole == UserRole.dosen || _selectedRole == UserRole.admin) {
                                   if (value == null || value.isEmpty) {
                                     return 'NIP tidak boleh kosong';
                                   }
@@ -363,7 +367,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               }
                             : null,
                       ),
-                    const SizedBox(height: 16),
+                    if ((_nimController.text.isNotEmpty || _nipController.text.isNotEmpty || _isFirstTime))
+                      const SizedBox(height: 16),
 
                     // Phone
                     TextFormField(
@@ -433,6 +438,27 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ),
                         ],
                       ),
+                    
+                    // Logout Button
+                    if (!_isEditing && !_isFirstTime) ...[
+                      const SizedBox(height: 16),
+                      const Divider(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _logout,
+                          icon: const Icon(Icons.logout, color: AppColors.error),
+                          label: const Text(
+                            'Keluar',
+                            style: TextStyle(color: AppColors.error),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(color: AppColors.error),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

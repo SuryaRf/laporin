@@ -24,6 +24,11 @@ class AppRouter {
     debugLogDiagnostics: false,
     initialLocation: '/',
     redirect: (BuildContext context, GoRouterState state) async {
+      // Skip redirect if updating profile
+      if (!authProvider.shouldNotifyRouter) {
+        return null;
+      }
+      
       final location = state.matchedLocation;
       final isAuthenticated = authProvider.isAuthenticated;
       final isAdmin = authProvider.isAdmin;
