@@ -11,6 +11,8 @@ import 'package:laporin/models/enums.dart';
 import 'package:laporin/models/location_model.dart';
 import 'package:laporin/models/media_model.dart';
 import 'package:laporin/models/report_model.dart';
+import 'package:laporin/services/supabase_storage_service.dart';
+import 'package:laporin/services/notification_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:io';
 
@@ -42,6 +44,9 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   final List<MediaItem> _mediaItems = [];
   bool _isLoadingLocation = false;
   bool _isSubmitting = false;
+  String _uploadStatus = '';
+  final _supabaseStorage = SupabaseStorageService();
+  final _notificationService = NotificationService();
 
   int get _imageCount => _mediaItems.where((m) => m.type == MediaType.image).length;
   int get _videoCount => _mediaItems.where((m) => m.type == MediaType.video).length;
@@ -321,12 +326,13 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
     try {
       final reportProvider = context.read<ReportProvider>();
-      bool success;
+      bool updateSuccess = false;
+      String? createdReportId;
 
       // Check if this is edit mode or create mode
       if (widget.reportToEdit != null) {
         // Edit mode - update existing report
-        success = await reportProvider.updateReport(
+        updateSuccess = await reportProvider.updateReport(
           widget.reportToEdit!.id,
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -335,17 +341,58 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         );
       } else {
         // Create mode - create new report
-        // Convert media items to MediaFile objects
-        final mediaFiles = _mediaItems
-            .map((item) => MediaFile(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  url: item.file.path,
-                  type: item.type,
-                  uploadedAt: DateTime.now(),
-                ))
-            .toList();
+        // Upload media files to Supabase Storage first
+        List<MediaFile> mediaFiles = [];
 
-        success = await reportProvider.createReport(
+        if (_mediaItems.isNotEmpty) {
+          setState(() {
+            _uploadStatus = 'Uploading files...';
+          });
+
+          // Prepare media items for upload
+          final mediaToUpload = _mediaItems.map((item) {
+            return {
+              'file': item.file,
+              'type': item.type == MediaType.image ? 'image' : 'video',
+            };
+          }).toList();
+
+          // Upload to Supabase Storage
+          final uploadResults = await _supabaseStorage.uploadMultipleMedia(
+            mediaItems: mediaToUpload,
+            userId: user.id,
+            onProgress: (current, total) {
+              setState(() {
+                _uploadStatus = 'Uploading $current of $total files...';
+              });
+            },
+          );
+
+          // Convert upload results to MediaFile objects
+          for (var i = 0; i < uploadResults.length; i++) {
+            final result = uploadResults[i];
+
+            // Skip if upload failed
+            if (result['type'] == 'error') {
+              debugPrint('⚠️ Skipping failed upload: ${result['error']}');
+              continue;
+            }
+
+            mediaFiles.add(MediaFile(
+              id: DateTime.now().millisecondsSinceEpoch.toString() + '_$i',
+              url: result['url'] as String,
+              thumbnailUrl: result['thumbnailUrl'] as String?,
+              type: result['type'] == 'image' ? MediaType.image : MediaType.video,
+              uploadedAt: DateTime.now(),
+            ));
+          }
+
+          setState(() {
+            _uploadStatus = 'Creating report...';
+          });
+        }
+
+        createdReportId = await reportProvider.createReport(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           category: _selectedCategory,
@@ -357,7 +404,22 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       }
 
       if (mounted) {
-        if (success) {
+        final isSuccess = widget.reportToEdit != null ? updateSuccess : createdReportId != null;
+
+        if (isSuccess) {
+          // Send notification to admins (only for new reports)
+          if (createdReportId != null) {
+            setState(() {
+              _uploadStatus = 'Sending notifications...';
+            });
+
+            await _notificationService.sendNotificationToAdmins(
+              reportId: createdReportId,
+              reportTitle: _titleController.text.trim(),
+              reporterName: user.name,
+            );
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(widget.reportToEdit != null
@@ -392,6 +454,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
+          _uploadStatus = '';
         });
       }
     }
@@ -892,13 +955,27 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                     backgroundColor: AppColors.primary,
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.white,
-                          ),
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.white,
+                              ),
+                            ),
+                            if (_uploadStatus.isNotEmpty) ...[
+                              const SizedBox(width: 12),
+                              Text(
+                                _uploadStatus,
+                                style: AppTextStyles.button.copyWith(
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ],
                         )
                       : Text(
                           isEditMode ? 'Update Laporan' : 'Kirim Laporan',

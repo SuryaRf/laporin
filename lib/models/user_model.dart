@@ -10,6 +10,7 @@ class User {
   final String? nip; // For Dosen
   final String? phone;
   final String? avatarUrl;
+  final String? fcmToken; // For push notifications
   final DateTime createdAt;
 
   User({
@@ -21,6 +22,7 @@ class User {
     this.nip,
     this.phone,
     this.avatarUrl,
+    this.fcmToken,
     required this.createdAt,
   });
 
@@ -48,6 +50,7 @@ class User {
       nip: json['nip'] as String?,
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
+      fcmToken: json['fcm_token'] as String?,
       createdAt: createdAt,
     );
   }
@@ -62,6 +65,7 @@ class User {
       'nip': nip,
       'phone': phone,
       'avatar_url': avatarUrl,
+      'fcm_token': fcmToken,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -75,6 +79,7 @@ class User {
     String? nip,
     String? phone,
     String? avatarUrl,
+    String? fcmToken,
     DateTime? createdAt,
   }) {
     return User(
@@ -86,6 +91,7 @@ class User {
       nip: nip ?? this.nip,
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      fcmToken: fcmToken ?? this.fcmToken,
       createdAt: createdAt ?? this.createdAt,
     );
   }
