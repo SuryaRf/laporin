@@ -7,6 +7,7 @@ class NotificationProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
 
   List<NotificationModel> _notifications = [];
+  List<NotificationModel> adminNotifications = [];
   bool _isLoading = false;
   String? _errorMessage;
   StreamSubscription? _notificationsSubscription;
@@ -18,6 +19,9 @@ class NotificationProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   int get unreadCount => _unreadCount;
+
+
+  
 
   // Fetch notifications for a user
   Future<void> fetchNotifications(String userId) async {
@@ -108,6 +112,8 @@ class NotificationProvider with ChangeNotifier {
     }
   }
 
+  
+
   // Delete notification
   Future<bool> deleteNotification(String notificationId) async {
     try {
@@ -129,6 +135,8 @@ class NotificationProvider with ChangeNotifier {
       // Silently fail
     }
   }
+
+  
 
   void clearError() {
     _errorMessage = null;

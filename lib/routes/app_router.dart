@@ -139,6 +139,11 @@ class AppRouter {
         name: 'profile',
         builder: (context, state) => const UserProfileScreen(),
       ),
+//       GoRoute(
+//   path: '/admin/notifications',
+//   builder: (context, state) => const AdminNotificationScreen(),
+// ),
+
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

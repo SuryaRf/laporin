@@ -68,9 +68,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
-              // TODO: Show notifications
+              context.push('/admin/notifications');
             },
           ),
+
           PopupMenuButton<String>(
             icon: const Icon(Icons.account_circle),
             itemBuilder: (context) => <PopupMenuEntry<String>>[
@@ -1299,7 +1300,10 @@ class AdminProfileTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
@@ -1317,7 +1321,7 @@ class AdminProfileTab extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Profile Content
           SliverToBoxAdapter(
             child: Padding(
@@ -1334,14 +1338,22 @@ class AdminProfileTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoCard('Email', user?.email ?? '-', Icons.email_outlined),
+                  _buildInfoCard(
+                    'Email',
+                    user?.email ?? '-',
+                    Icons.email_outlined,
+                  ),
                   if (user?.nip != null && user!.nip!.isNotEmpty)
                     _buildInfoCard('NIP', user.nip!, Icons.badge_outlined),
                   if (user?.phone != null && user!.phone!.isNotEmpty)
-                    _buildInfoCard('Nomor Telepon', user.phone!, Icons.phone_outlined),
-                  
+                    _buildInfoCard(
+                      'Nomor Telepon',
+                      user.phone!,
+                      Icons.phone_outlined,
+                    ),
+
                   const SizedBox(height: 32),
-                  
+
                   // Logout Button
                   _buildLogoutButton(context, authProvider),
                 ],
@@ -1402,10 +1414,7 @@ class AdminProfileTab extends StatelessWidget {
         icon: const Icon(Icons.logout),
         label: const Text(
           'Keluar dari Akun',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
@@ -1442,11 +1451,7 @@ class AdminProfileTab extends StatelessWidget {
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 24,
-            ),
+            child: Icon(icon, color: AppColors.primary, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
