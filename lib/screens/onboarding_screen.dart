@@ -148,7 +148,7 @@ class _OnboardingPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Image/Icon Placeholder
+          // Image/Icon
           Container(
             width: 280,
             height: 280,
@@ -157,10 +157,34 @@ class _OnboardingPage extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Center(
-              child: Text(
-                data.image,
-                style: const TextStyle(fontSize: 120),
-              ),
+              child: data.image.startsWith('assets/')
+                  ? ClipOval(
+                      child: Image.asset(
+                        data.image,
+                        width: 280,
+                        height: 280,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 280,
+                            height: 280,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              size: 60,
+                              color: AppColors.primary,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Text(
+                      data.image,
+                      style: const TextStyle(fontSize: 120),
+                    ),
             ),
           ),
           const SizedBox(height: 48),
