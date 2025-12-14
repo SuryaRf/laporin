@@ -13,7 +13,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
-import 'dart:io';
 
 class ReportDetailScreen extends StatefulWidget {
   final String reportId;
@@ -860,24 +859,78 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                                     child: Stack(
                                       children: [
                                         if (isVideo)
-                                          Container(
-                                            width: 150,
-                                            height: 150,
-                                            color: Colors.black87,
-                                            child: const Center(
-                                              child: Icon(
-                                                Icons.play_circle_fill,
-                                                size: 64,
-                                                color: AppColors.white,
-                                              ),
-                                            ),
-                                          )
+                                          // Video thumbnail or placeholder
+                                          (media.thumbnailUrl != null && media.thumbnailUrl!.isNotEmpty)
+                                              ? Image.network(
+                                                  media.thumbnailUrl!,
+                                                  width: 150,
+                                                  height: 150,
+                                                  fit: BoxFit.cover,
+                                                  loadingBuilder: (context, child, loadingProgress) {
+                                                    if (loadingProgress == null) return child;
+                                                    return Container(
+                                                      width: 150,
+                                                      height: 150,
+                                                      color: Colors.black87,
+                                                      child: Center(
+                                                        child: CircularProgressIndicator(
+                                                          value: loadingProgress.expectedTotalBytes != null
+                                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                              : null,
+                                                          color: AppColors.white,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Container(
+                                                      width: 150,
+                                                      height: 150,
+                                                      color: Colors.black87,
+                                                      child: const Center(
+                                                        child: Icon(
+                                                          Icons.play_circle_fill,
+                                                          size: 64,
+                                                          color: AppColors.white,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                )
+                                              : Container(
+                                                  width: 150,
+                                                  height: 150,
+                                                  color: Colors.black87,
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.play_circle_fill,
+                                                      size: 64,
+                                                      color: AppColors.white,
+                                                    ),
+                                                  ),
+                                                )
                                         else
-                                          Image.file(
-                                            File(media.url),
+                                          // Image from Supabase URL
+                                          Image.network(
+                                            media.url,
                                             width: 150,
                                             height: 150,
                                             fit: BoxFit.cover,
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return Container(
+                                                width: 150,
+                                                height: 150,
+                                                color: AppColors.greyLight,
+                                                child: Center(
+                                                  child: CircularProgressIndicator(
+                                                    value: loadingProgress.expectedTotalBytes != null
+                                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                        : null,
+                                                  ),
+                                                ),
+                                              );
+                                            },
                                             errorBuilder: (context, error, stackTrace) {
                                               return Container(
                                                 width: 150,
@@ -1265,9 +1318,21 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   child: InteractiveViewer(
                     minScale: 0.5,
                     maxScale: 4.0,
-                    child: Image.file(
-                      File(images[index].url),
+                    child: Image.network(
+                      images[index].url,
                       fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: AppColors.white,
+                          ),
+                        );
+                      },
                       errorBuilder: (context, error, stackTrace) {
                         return Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1331,7 +1396,7 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
 
   Future<void> _initializeVideo() async {
     try {
-      _controller = VideoPlayerController.file(File(widget.videoPath));
+      _controller = VideoPlayerController.network(widget.videoPath);
       await _controller.initialize();
       setState(() {
         _isInitialized = true;
