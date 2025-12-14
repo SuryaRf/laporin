@@ -1446,65 +1446,75 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
               )
             : !_isInitialized
                 ? const CircularProgressIndicator(color: AppColors.white)
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AspectRatio(
-                        aspectRatio: _controller.value.aspectRatio,
-                        child: VideoPlayer(_controller),
-                      ),
-                      const SizedBox(height: 3),
-                      // Video controls
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              _controller.value.isPlaying
-                                  ? Icons.pause_circle_filled
-                                  : Icons.play_circle_filled,
-                              color: AppColors.white,
-                              size: 48,
+                : SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Add top spacing
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.1,
+                        ),
+                        AspectRatio(
+                          aspectRatio: _controller.value.aspectRatio,
+                          child: VideoPlayer(_controller),
+                        ),
+                        const SizedBox(height: 16),
+                        // Video controls
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                _controller.value.isPlaying
+                                    ? Icons.pause_circle_filled
+                                    : Icons.play_circle_filled,
+                                color: AppColors.white,
+                                size: 48,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  if (_controller.value.isPlaying) {
+                                    _controller.pause();
+                                  } else {
+                                    _controller.play();
+                                  }
+                                });
+                              },
                             ),
-                            onPressed: () {
-                              setState(() {
-                                if (_controller.value.isPlaying) {
-                                  _controller.pause();
-                                } else {
-                                  _controller.play();
-                                }
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.replay,
-                              color: AppColors.white,
-                              size: 32,
+                            const SizedBox(width: 16),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.replay,
+                                color: AppColors.white,
+                                size: 32,
+                              ),
+                              onPressed: () {
+                                _controller.seekTo(Duration.zero);
+                                _controller.play();
+                              },
                             ),
-                            onPressed: () {
-                              _controller.seekTo(Duration.zero);
-                              _controller.play();
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Progress indicator
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: VideoProgressIndicator(
-                          _controller,
-                          allowScrubbing: true,
-                          colors: const VideoProgressColors(
-                            playedColor: AppColors.primary,
-                            bufferedColor: AppColors.greyLight,
-                            backgroundColor: AppColors.greyDark,
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Progress indicator
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: VideoProgressIndicator(
+                            _controller,
+                            allowScrubbing: true,
+                            colors: const VideoProgressColors(
+                              playedColor: AppColors.primary,
+                              bufferedColor: AppColors.greyLight,
+                              backgroundColor: AppColors.greyDark,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        // Add bottom spacing
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.1,
+                        ),
+                      ],
+                    ),
                   ),
       ),
     );

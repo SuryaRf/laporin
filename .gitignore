@@ -43,3 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase Service Account (sensitive!)
+*firebase-adminsdk*.json
+service-account*.json
+*-service-account.json
+
+# Environment variables
+.env
+.env.local

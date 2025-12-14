@@ -2,18 +2,34 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+
+  String? _getAccessToken() {
+  final session = Supabase.instance.client.auth.currentSession;
+  return session?.accessToken;
+}
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  // Supabase Edge Function URL
-  static const String _edgeFunctionUrl =
-      'https://hwskzjaimgnrruxaeasu.supabase.co/functions/v1/send-notification';
+
+  // Supabase Edge Function URL (Legacy API - simpler!)
+static const String _edgeFunctionUrl =
+  'https://hwskzjaimgnrruxaeasu.supabase.co/functions/v1/send-notification';
+
 
   // Supabase Anon Key
   static const String _supabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3c2t6amFpbWducnJ1eGFlYXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2NzY5ODgsImV4cCI6MjA4MTI1Mjk4OH0.7QrQiWJtP6kQ2WlDSBkYujH-sXpuVj35Cw99Gq1gntw';
+
+final session = Supabase.instance.client.auth.currentSession;
+
+
+final accessToken = _getAccessToken();
+
 
   /// Send notification to all admins
   /// Called when user creates a new report
@@ -28,7 +44,7 @@ class NotificationService {
       final response = await http.post(
         Uri.parse(_edgeFunctionUrl),
         headers: {
-          'Authorization': 'Bearer $_supabaseAnonKey',
+          'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({

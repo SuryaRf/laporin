@@ -2,10 +2,10 @@
 // Deploy: supabase functions deploy send-notification
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { GoogleAuth } from "https://esm.sh/google-auth-library@9.0.0"
 
-const FIRESTORE_BASE_URL = "https://firestore.googleapis.com/v1/projects/laporin-b4a18/databases/(default)/documents"
-const FCM_URL = "https://fcm.googleapis.com/v1/projects/laporin-b4a18/messages:send"
+const FIREBASE_PROJECT_ID = "laporin-b4a18"
+const FIRESTORE_BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`
+const FCM_URL = `https://fcm.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/messages:send`
 
 // Interface definitions
 interface NotificationRequest {
@@ -21,6 +21,106 @@ interface FCMToken {
   token: string
 }
 
+// Helper: Create JWT and get OAuth2 access token
+async function getAccessToken(serviceAccount: any): Promise<string> {
+  const now = Math.floor(Date.now() / 1000)
+
+  // JWT Header
+  const header = {
+    alg: "RS256",
+    typ: "JWT"
+  }
+
+  // JWT Claim Set
+  const claimSet = {
+    iss: serviceAccount.client_email,
+    scope: "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/firebase.messaging",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now
+  }
+
+  // Encode header and claim set
+  const encodedHeader = base64UrlEncode(JSON.stringify(header))
+  const encodedClaimSet = base64UrlEncode(JSON.stringify(claimSet))
+  const signatureInput = `${encodedHeader}.${encodedClaimSet}`
+
+  // Import private key
+  const privateKey = serviceAccount.private_key
+
+  // Remove PEM headers/footers and whitespace
+  const pemContents = privateKey
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\\n/g, '')  // Remove literal \n characters from JSON
+    .replace(/\n/g, '')   // Remove actual newlines
+    .replace(/\r/g, '')   // Remove carriage returns
+    .replace(/\s/g, '')   // Remove all whitespace
+    .trim()
+
+  const binaryDer = base64Decode(pemContents)
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    binaryDer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  )
+
+  // Sign the JWT
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    new TextEncoder().encode(signatureInput)
+  )
+
+  const encodedSignature = base64UrlEncode(signature)
+  const jwt = `${signatureInput}.${encodedSignature}`
+
+  // Exchange JWT for access token
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+  })
+
+  if (!tokenResponse.ok) {
+    const error = await tokenResponse.text()
+    throw new Error(`Failed to get access token: ${error}`)
+  }
+
+  const tokenData = await tokenResponse.json()
+  return tokenData.access_token
+}
+
+// Helper: Base64 URL encode
+function base64UrlEncode(data: string | ArrayBuffer): string {
+  let base64: string
+
+  if (typeof data === 'string') {
+    base64 = btoa(data)
+  } else {
+    const bytes = new Uint8Array(data)
+    base64 = btoa(String.fromCharCode(...bytes))
+  }
+
+  return base64
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '')
+}
+
+// Helper: Base64 decode
+function base64Decode(base64: string): Uint8Array {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return bytes
+}
+
 serve(async (req) => {
   // CORS headers
   const corsHeaders = {
@@ -34,11 +134,16 @@ serve(async (req) => {
   }
 
   try {
+    console.log('📩 Notification request received')
+
     // Parse request body
     const { type, title, body, reportId, userId }: NotificationRequest = await req.json()
 
+    console.log(`Request: type=${type}, reportId=${reportId}, userId=${userId || 'N/A'}`)
+
     // Validate request
     if (!type || !title || !body || !reportId) {
+      console.error('Missing required fields')
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -46,56 +151,69 @@ serve(async (req) => {
     }
 
     // Get Service Account credentials from Supabase Secrets
-    const serviceAccountJson = Deno.env.get('FIREBASE_SERVICE_ACCOUNT')
-    if (!serviceAccountJson) {
-      throw new Error('Firebase Service Account not configured in Supabase Secrets')
-    }
+    // Get Service Account credentials from Supabase Secrets (BASE64)
+const base64Secret = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_BASE64')
 
-    const serviceAccount = JSON.parse(serviceAccountJson)
+if (!base64Secret) {
+  throw new Error('FIREBASE_SERVICE_ACCOUNT_BASE64 not configured')
+}
+
+// Decode Base64 → JSON string
+const jsonString = new TextDecoder().decode(
+  Uint8Array.from(atob(base64Secret), c => c.charCodeAt(0))
+)
+
+// Parse JSON
+const serviceAccount = JSON.parse(jsonString)
+
+console.log('✅ Service account parsed successfully')
+console.log('Project ID:', serviceAccount.project_id)
+
+
+    console.log('✅ Service account parsed successfully')
+    console.log('Project ID:', serviceAccount.project_id)
 
     // Get OAuth 2.0 access token
-    const auth = new GoogleAuth({
-      credentials: serviceAccount,
-      scopes: ['https://www.googleapis.com/auth/firebase.messaging']
-    })
-    const client = await auth.getClient()
-    const accessToken = await client.getAccessToken()
-
-    if (!accessToken.token) {
-      throw new Error('Failed to get access token')
-    }
+    console.log('🔐 Getting access token...')
+    const accessToken = await getAccessToken(serviceAccount)
+    console.log('✅ Access token obtained')
 
     // Get FCM tokens based on notification type
     let fcmTokens: string[] = []
 
     if (type === 'to_admins') {
-      // Query Firestore for all admin users
-      fcmTokens = await getAdminTokens(accessToken.token)
+      console.log('📋 Querying admin tokens...')
+      fcmTokens = await getAdminTokens(accessToken)
+      console.log(`Found ${fcmTokens.length} admin tokens`)
     } else if (type === 'to_user') {
-      // Query Firestore for specific user
       if (!userId) {
+        console.error('userId missing for to_user type')
         return new Response(
           JSON.stringify({ error: 'userId required for to_user type' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
-      const userToken = await getUserToken(userId, accessToken.token)
+      console.log(`📋 Querying user token for ${userId}...`)
+      const userToken = await getUserToken(userId, accessToken)
       if (userToken) {
         fcmTokens = [userToken]
+        console.log('✅ User token found')
+      } else {
+        console.log('⚠️ No FCM token found for user')
       }
     }
 
-    console.log(`Found ${fcmTokens.length} FCM tokens to send to`)
+    console.log(`📤 Sending to ${fcmTokens.length} devices...`)
 
     // Send FCM notification to each token
     const results = await Promise.allSettled(
-      fcmTokens.map(token => sendFCMNotification(token, title, body, reportId, accessToken.token!))
+      fcmTokens.map(token => sendFCMNotification(token, title, body, reportId, accessToken))
     )
 
     const successCount = results.filter(r => r.status === 'fulfilled').length
     const failureCount = results.filter(r => r.status === 'rejected').length
 
-    console.log(`Notifications sent: ${successCount} success, ${failureCount} failed`)
+    console.log(`✅ Sent: ${successCount} success, ${failureCount} failed`)
 
     return new Response(
       JSON.stringify({
@@ -107,7 +225,8 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error sending notification:', error)
+    console.error('❌ Error:', error.message)
+    console.error('Stack:', error.stack)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(flutter pub get:*)",
       "Bash(flutter clean:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(supabase functions deploy:*)"
     ]
   }
 }
