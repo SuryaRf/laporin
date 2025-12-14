@@ -13,7 +13,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -54,7 +55,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (!mounted) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final isOnboardingComplete = await OnboardingProvider.isOnboardingComplete();
+    final isOnboardingComplete =
+        await OnboardingProvider.isOnboardingComplete();
 
     if (!mounted) return;
 
@@ -84,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primary, // Light blue from design system
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -108,11 +110,25 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.report_problem_outlined,
-                      size: 60,
-                      color: AppColors.primary,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.asset(
+                      'assets/images/logo_2.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: AppColors.white,
+                          child: const Center(
+                            child: Icon(
+                              Icons.report_problem_outlined,
+                              size: 60,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -123,22 +139,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             FadeTransition(
               opacity: _fadeAnimation,
               child: Text(
-                'LaporJTI',
+                'laporin',
                 style: AppTextStyles.h1.copyWith(
                   color: AppColors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 36,
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: Text(
-                'Sistem Pelaporan Fasilitas Kampus',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.white.withValues(alpha: 0.9),
-                ),
-                textAlign: TextAlign.center,
               ),
             ),
           ],

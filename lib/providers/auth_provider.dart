@@ -779,4 +779,149 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
   }
+
+  // Unified login that automatically detects role based on credentials
+  // Tries admin login first, then user login
+  Future<bool> loginUnified(
+    String email,
+    String password, {
+    bool rememberMe = false,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // First, try to login as admin
+      final adminLoginSuccess = await _tryAdminLogin(email, password, rememberMe);
+      if (adminLoginSuccess) {
+        return true;
+      }
+
+      // If admin login fails, try user login
+      final userLoginSuccess = await _tryUserLogin(email, password);
+      if (userLoginSuccess) {
+        return true;
+      }
+
+      // Both failed
+      _errorMessage = 'Email atau password salah';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Login gagal: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Helper method to try admin login
+  Future<bool> _tryAdminLogin(
+    String email,
+    String password,
+    bool rememberMe,
+  ) async {
+    try {
+      // Query Firestore for admin with matching email
+      final admins = await _firestoreService.getAdminByEmail(email);
+
+      if (admins.isEmpty) {
+        // Check mock admin
+        if (email == 'admin@laporin.com' && password == 'admin123') {
+          _currentUser = User(
+            id: 'admin001',
+            name: 'Admin Laporin',
+            email: 'admin@laporin.com',
+            role: UserRole.admin,
+            nip: 'ADM001',
+            phone: '081234567890',
+            createdAt: DateTime.now(),
+          );
+
+          await _saveUserData(_currentUser!);
+          await saveAdminCredentials(email, password, rememberMe);
+
+          _status = AuthStatus.authenticated;
+          _useFirebase = false;
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        }
+        return false;
+      }
+
+      final admin = admins.first;
+
+      // Verify password
+      if (admin['password'] != password) {
+        return false;
+      }
+
+      // Create User object from Firestore data
+      DateTime createdAt;
+      final createdAtValue = admin['created_at'];
+      if (createdAtValue != null) {
+        try {
+          createdAt = (createdAtValue as dynamic).toDate();
+        } catch (_) {
+          createdAt = DateTime.now();
+        }
+      } else {
+        createdAt = DateTime.now();
+      }
+
+      _currentUser = User(
+        id: admin['id'],
+        name: admin['name'] ?? 'Admin',
+        email: admin['email'] ?? 'admin@laporin.com',
+        role: UserRole.admin,
+        nip: admin['nip'],
+        phone: admin['phone'],
+        avatarUrl: admin['avatar_url'],
+        createdAt: createdAt,
+      );
+
+      await _saveUserData(_currentUser!);
+      await saveAdminCredentials(email, password, rememberMe);
+
+      _status = AuthStatus.authenticated;
+      _useFirebase = false;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Helper method to try user login
+  Future<bool> _tryUserLogin(String email, String password) async {
+    try {
+      // Use Firebase authentication for users
+      final user = await _authService.signInWithEmailAndPassword(
+        email,
+        password,
+      );
+
+      if (user != null) {
+        // Ensure the user is not admin (should have been caught by admin login)
+        if (user.role == UserRole.admin) {
+          return false;
+        }
+
+        _currentUser = user;
+        await _saveUserData(user);
+        _status = AuthStatus.authenticated;
+        _useFirebase = true;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }

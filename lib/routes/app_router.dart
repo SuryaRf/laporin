@@ -27,10 +27,18 @@ class AppRouter {
       final location = state.matchedLocation;
       final isAuthenticated = authProvider.isAuthenticated;
       final isAdmin = authProvider.isAdmin;
-      final isOnboardingComplete = await OnboardingProvider.isOnboardingComplete();
+      final isOnboardingComplete =
+          await OnboardingProvider.isOnboardingComplete();
 
       // Public routes (accessible without authentication)
-      final publicRoutes = ['/', '/onboarding', '/login', '/login/user', '/login/admin', '/register'];
+      final publicRoutes = [
+        '/',
+        '/onboarding',
+        '/login',
+        '/login/user',
+        '/login/admin',
+        '/register',
+      ];
       final isPublicRoute = publicRoutes.contains(location);
 
       // Allow splash screen to handle initial navigation
@@ -39,7 +47,11 @@ class AppRouter {
       }
 
       // If authenticated, redirect away from auth screens to appropriate home
-      if (isAuthenticated && (location == '/login' || location == '/login/user' || location == '/login/admin' || location == '/register')) {
+      if (isAuthenticated &&
+          (location == '/login' ||
+              location == '/login/user' ||
+              location == '/login/admin' ||
+              location == '/register')) {
         return isAdmin ? '/admin' : '/home';
       }
 
@@ -48,7 +60,7 @@ class AppRouter {
         if (isAuthenticated) {
           return '/home'; // Redirect non-admin users to user home
         }
-        return '/login/admin'; // Redirect unauthenticated to admin login
+        return '/login'; // Redirect unauthenticated to unified login
       }
 
       // User-only routes protection
@@ -57,7 +69,7 @@ class AppRouter {
           return '/admin'; // Redirect admin to admin panel
         }
         if (!isAuthenticated) {
-          return '/login/user'; // Redirect unauthenticated to user login
+          return '/login'; // Redirect unauthenticated to unified login
         }
       }
 
@@ -140,11 +152,7 @@ class AppRouter {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
             Text(
               'Halaman tidak ditemukan',
