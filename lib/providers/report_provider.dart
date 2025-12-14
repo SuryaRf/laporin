@@ -209,6 +209,32 @@ class ReportProvider with ChangeNotifier {
       // Create in Firestore and get report ID
       final reportId = await _firestoreService.createReport(newReport);
 
+      // Create notification for admin
+      final adminNotification = NotificationModel(
+        id: '',
+        userId: 'admin', // Special user ID for all admins
+        title: 'Laporan Baru Masuk',
+        message: 'Laporan baru dari ${reporter.name}: "${title}"',
+        type: NotificationType.newReport,
+        reportId: reportId,
+        reportTitle: title,
+        createdAt: DateTime.now(),
+        metadata: {
+          'reporter_name': reporter.name,
+          'category': category.name,
+          'priority': priority.name,
+        },
+      );
+
+      await _firestoreService.createNotification(adminNotification);
+
+      // Send push notification to admin
+      await _notificationService.sendNotificationToAdmins(
+        reportId: reportId,
+        reportTitle: title,
+        reporterName: reporter.name,
+      );
+
       _isLoading = false;
       notifyListeners();
       return reportId;

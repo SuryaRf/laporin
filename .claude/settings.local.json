@@ -4,7 +4,9 @@
       "Bash(flutter pub get:*)",
       "Bash(flutter clean:*)",
       "Bash(flutter build:*)",
-      "Bash(supabase functions deploy:*)"
+      "Bash(supabase functions deploy:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(echo:*)"
     ]
   }
 }

@@ -7,13 +7,15 @@ class NotificationProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
 
   List<NotificationModel> _notifications = [];
-  List<NotificationModel> adminNotifications = [];
+  List<NotificationModel> _adminNotifications = [];
   bool _isLoading = false;
   String? _errorMessage;
   StreamSubscription? _notificationsSubscription;
+  StreamSubscription? _adminNotificationsSubscription;
   int _unreadCount = 0;
 
   List<NotificationModel> get notifications => _notifications;
+  List<NotificationModel> get adminNotifications => _adminNotifications;
   List<NotificationModel> get unreadNotifications =>
       _notifications.where((n) => !n.isRead).toList();
   bool get isLoading => _isLoading;
@@ -136,7 +138,53 @@ class NotificationProvider with ChangeNotifier {
     }
   }
 
-  
+  // Fetch admin notifications
+  Future<void> fetchAdminNotifications() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Cancel existing subscription
+      await _adminNotificationsSubscription?.cancel();
+
+      // Listen to admin notifications stream
+      _adminNotificationsSubscription = _firestoreService
+          .getAdminNotifications()
+          .listen(
+        (notifications) {
+          _adminNotifications = notifications;
+          _unreadCount = notifications.where((n) => !n.isRead).length;
+          _isLoading = false;
+          notifyListeners();
+        },
+        onError: (e) {
+          _errorMessage = 'Gagal memuat notifikasi: $e';
+          _isLoading = false;
+          notifyListeners();
+        },
+      );
+    } catch (e) {
+      _errorMessage = 'Gagal memuat notifikasi: $e';
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Mark all admin notifications as read
+  Future<bool> markAllAdminAsRead() async {
+    try {
+      // Mark all unread admin notifications as read
+      for (final notification in _adminNotifications.where((n) => !n.isRead)) {
+        await _firestoreService.markNotificationAsRead(notification.id);
+      }
+      return true;
+    } catch (e) {
+      _errorMessage = 'Gagal menandai semua notifikasi: $e';
+      notifyListeners();
+      return false;
+    }
+  }
 
   void clearError() {
     _errorMessage = null;
@@ -146,6 +194,7 @@ class NotificationProvider with ChangeNotifier {
   @override
   void dispose() {
     _notificationsSubscription?.cancel();
+    _adminNotificationsSubscription?.cancel();
     super.dispose();
   }
 }

@@ -21,6 +21,7 @@ enum NotificationType {
   reportApproved,
   reportRejected,
   reportStatusChanged,
+  newReport,
   general,
 }
 
@@ -33,6 +34,8 @@ extension NotificationTypeExtension on NotificationType {
         return 'Laporan Ditolak';
       case NotificationType.reportStatusChanged:
         return 'Status Laporan Berubah';
+      case NotificationType.newReport:
+        return 'Laporan Baru';
       case NotificationType.general:
         return 'Notifikasi';
     }
@@ -46,6 +49,8 @@ extension NotificationTypeExtension on NotificationType {
         return '❌';
       case NotificationType.reportStatusChanged:
         return '🔄';
+      case NotificationType.newReport:
+        return '📝';
       case NotificationType.general:
         return '📢';
     }

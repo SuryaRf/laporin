@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:laporin/constants/colors.dart';
 import 'package:laporin/constants/text_styles.dart';
 import 'package:laporin/providers/auth_provider.dart';
+import 'package:laporin/providers/notification_provider.dart';
 import 'package:laporin/screens/admin/user_management_screen.dart';
 import 'package:laporin/screens/report_detail_screen.dart';
 import 'package:laporin/services/firestore_service.dart';
@@ -23,8 +24,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _selectedIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // Fetch admin notifications when admin home screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notificationProvider = context.read<NotificationProvider>();
+      notificationProvider.fetchAdminNotifications();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final notificationProvider = Provider.of<NotificationProvider>(context);
 
     // Verify admin access
     if (!authProvider.isAdmin) {
@@ -65,11 +77,43 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              context.push('/admin/notifications');
-            },
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () {
+                  context.push('/admin/notifications');
+                },
+              ),
+              if (notificationProvider.unreadCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Center(
+                      child: Text(
+                        notificationProvider.unreadCount > 9
+                            ? '9+'
+                            : '${notificationProvider.unreadCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
 
           PopupMenuButton<String>(
