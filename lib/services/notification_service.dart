@@ -44,7 +44,7 @@ final accessToken = _getAccessToken();
       final response = await http.post(
         Uri.parse(_edgeFunctionUrl),
         headers: {
-          'Authorization': 'Bearer $accessToken',
+          'Authorization': 'Bearer $_supabaseAnonKey',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({

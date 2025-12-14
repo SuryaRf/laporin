@@ -6,6 +6,7 @@ import 'package:laporin/constants/text_styles.dart';
 import 'package:laporin/providers/auth_provider.dart';
 import 'package:laporin/providers/notification_provider.dart';
 import 'package:laporin/screens/admin/user_management_screen.dart';
+import 'package:laporin/screens/admin/admin_notification_screen.dart';
 import 'package:laporin/screens/report_detail_screen.dart';
 import 'package:laporin/services/firestore_service.dart';
 import 'package:laporin/models/report_model.dart';
@@ -82,7 +83,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () {
-                  context.push('/admin/notifications');
+                  // Navigate to admin notification screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminNotificationScreen(),
+                    ),
+                  );
                 },
               ),
               if (notificationProvider.unreadCount > 0)

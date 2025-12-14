@@ -41,12 +41,11 @@ class _HomeScreenState extends State<HomeScreen> {
         if (newIndex == 2) {
           final authProvider = context.read<AuthProvider>();
 
-          // If user doesn't have permission, prevent navigation
-          if (!authProvider.canCreateReports()) {
-            // Reset to previous index
-            _controller.jumpToTab(_currentIndex);
+          // Reset to current index to prevent navigation
+          _controller.jumpToTab(_currentIndex);
 
-            // Show message
+          // If user doesn't have permission, show error
+          if (!authProvider.canCreateReports()) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Anda tidak memiliki akses untuk membuat laporan'),
@@ -55,6 +54,21 @@ class _HomeScreenState extends State<HomeScreen> {
             );
             return;
           }
+
+          // Open Create Report screen via Navigator
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CreateReportScreen(),
+            ),
+          ).then((result) {
+            // Refresh reports if report was created
+            if (result == true && mounted) {
+              context.read<ReportProvider>().fetchReports();
+            }
+          });
+
+          return;
         }
 
         setState(() {
@@ -84,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return [
       const DashboardPage(),
       const ReportListScreen(),
-      const CreateReportScreen(), // Center button - Create Report
+      const _PlaceholderScreen(), // Placeholder for center button
       const NotificationScreen(),
       const ProfilePage(),
     ];
@@ -2029,6 +2043,21 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Text('Tutup'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Placeholder screen for center button
+// This screen will never be shown because we intercept the tap
+class _PlaceholderScreen extends StatelessWidget {
+  const _PlaceholderScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
       ),
     );
   }
