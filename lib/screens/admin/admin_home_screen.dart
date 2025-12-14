@@ -55,67 +55,108 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       );
     }
 
+    final user = authProvider.currentUser;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Dashboard Admin',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        automaticallyImplyLeading: false,
+        title: Row(
+          children: [
+            // Profile Picture
+            GestureDetector(
+              onTap: () {
+                // Navigate to profile or show menu
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.person),
+                          title: Text(authProvider.userName ?? 'Admin'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            // Navigate to profile
+                          },
+                        ),
+                        const Divider(),
+                        const ListTile(
+                          leading: Icon(Icons.settings),
+                          title: Text('Pengaturan'),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.logout, color: AppColors.error),
+                          title: const Text('Logout', style: TextStyle(color: AppColors.error)),
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await authProvider.logout();
+                            if (context.mounted) {
+                              context.go('/login');
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundImage: user?.avatarUrl != null
+                    ? NetworkImage(user!.avatarUrl!)
+                    : null,
+                child: user?.avatarUrl == null
+                    ? const Icon(Icons.person, color: AppColors.primary, size: 24)
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Welcome Text and Name
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Selamat Datang!',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    authProvider.userName ?? 'Admin',
+                    style: AppTextStyles.h3.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            // Notification Icon
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+              onPressed: () {
+                // TODO: Show notifications
+              },
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Show notifications
-            },
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.account_circle),
-            itemBuilder: (context) => <PopupMenuEntry<String>>[
-              PopupMenuItem<String>(
-                value: 'profile',
-                child: Row(
-                  children: [
-                    const Icon(Icons.person, size: 20),
-                    const SizedBox(width: 8),
-                    Text(authProvider.userName ?? 'Admin'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, size: 20),
-                    SizedBox(width: 8),
-                    Text('Pengaturan'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, size: 20, color: AppColors.error),
-                    SizedBox(width: 8),
-                    Text('Logout', style: TextStyle(color: AppColors.error)),
-                  ],
-                ),
-              ),
-            ],
-            onSelected: (String value) async {
-              if (value == 'logout') {
-                await authProvider.logout();
-                if (context.mounted) {
-                  context.go('/login');
-                }
-              }
-            },
-          ),
-        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -262,79 +303,86 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
 
     return RefreshIndicator(
       onRefresh: _loadData,
+      color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Overview', style: AppTextStyles.h2),
-            const SizedBox(height: 16),
-
-            // Statistics Cards
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Total Laporan',
-                    _stats['total'].toString(),
-                    Icons.report,
-                    AppColors.primary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    'Diproses',
-                    _stats['inProgress'].toString(),
-                    Icons.pending,
-                    AppColors.warning,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Disetujui',
-                    _stats['approved'].toString(),
-                    Icons.check_circle,
-                    AppColors.success,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    'Ditolak',
-                    _stats['rejected'].toString(),
-                    Icons.cancel,
-                    AppColors.error,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Total Users Card
-            _buildStatCard(
-              'Total Pengguna',
-              _totalUsers.toString(),
-              Icons.people,
-              AppColors.secondary,
+            // Overview Title
+            Text(
+              'Overview',
+              style: AppTextStyles.h2.copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 24),
 
+            // Total Users Card - Full Width (Top)
+            _buildStatCard(
+              'Total Pengguna',
+              _totalUsers.toString(),
+              Icons.people_outline,
+              AppColors.secondary,
+              isFullWidth: true,
+            ),
+            const SizedBox(height: 16),
+
+            // Statistics Cards - Grid Layout (4 cards below)
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.2,
+              children: [
+                _buildStatCard(
+                  'Total Laporan',
+                  _stats['total'].toString(),
+                  Icons.report_problem_outlined,
+                  AppColors.primary,
+                ),
+                _buildStatCard(
+                  'Diproses',
+                  _stats['inProgress'].toString(),
+                  Icons.pending_outlined,
+                  AppColors.warning,
+                ),
+                _buildStatCard(
+                  'Disetujui',
+                  _stats['approved'].toString(),
+                  Icons.check_circle_outline,
+                  AppColors.success,
+                ),
+                _buildStatCard(
+                  'Ditolak',
+                  _stats['rejected'].toString(),
+                  Icons.cancel_outlined,
+                  AppColors.error,
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+
             // Quick Actions
-            Text('Aksi Cepat', style: AppTextStyles.h3),
-            const SizedBox(height: 12),
+            Text(
+              'Aksi Cepat',
+              style: AppTextStyles.h3.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: _buildQuickAction(
                     context,
                     'Kelola User',
-                    Icons.person_add,
+                    Icons.person_add_outlined,
                     AppColors.primary,
                     () {
                       // Navigate to users tab (index 2)
@@ -346,12 +394,12 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: _buildQuickAction(
                     context,
                     'Lihat Laporan',
-                    Icons.assignment,
+                    Icons.assignment_outlined,
                     AppColors.secondary,
                     () {
                       // Navigate to reports tab (index 1)
@@ -365,6 +413,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -375,36 +424,127 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     String title,
     String value,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    bool isFullWidth = false,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color,
+            color.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
+          // White bubble shadow in the center
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.15),
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
+          Positioned(
+            right: -10,
+            bottom: -10,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.1),
+              ),
             ),
           ),
+          // Content
+          isFullWidth
+              ? Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            value,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
         ],
       ),
     );
@@ -419,24 +559,42 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   ) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.greyLight,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
             Text(
               title,
-              style: TextStyle(
+              style: AppTextStyles.bodyMedium.copyWith(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: color,
+                color: AppColors.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),

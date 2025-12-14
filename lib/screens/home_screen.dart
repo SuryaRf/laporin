@@ -243,183 +243,63 @@ class _DashboardPageState extends State<DashboardPage> {
           appBar: AppBar(
             elevation: 0,
             backgroundColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary,
-                    AppColors.primary.withOpacity(0.9),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-            ),
-            leading: Builder(
-              builder: (context) => IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.white.withOpacity(0.4),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.menu_rounded,
-                    color: AppColors.white,
-                    size: 24,
-                  ),
-                ),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-            ),
+            automaticallyImplyLeading: false,
             title: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                // Profile Picture
+                GestureDetector(
+                  onTap: () {
+                    // Open drawer or navigate to profile
+                    Scaffold.of(context).openDrawer();
+                  },
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundImage: user?.avatarUrl != null
+                        ? NetworkImage(user!.avatarUrl!)
+                        : null,
+                    child: user?.avatarUrl == null
+                        ? const Icon(Icons.person, color: AppColors.primary, size: 24)
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Welcome Text and Name
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Selamat Datang!',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.name ?? 'User',
+                        style: AppTextStyles.h3.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.report_problem_outlined,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
-                ).animate(onPlay: (controller) => controller.repeat())
-                  .shimmer(duration: 2200.ms, color: AppColors.white.withOpacity(0.6))
-                  .scale(
-                    duration: 1800.ms,
-                    begin: const Offset(1.0, 1.0),
-                    end: const Offset(1.08, 1.08),
-                    curve: Curves.easeInOut,
-                  ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'LaporJTI',
-                      style: GoogleFonts.poppins(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.white,
-                        letterSpacing: 0.8,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.2),
-                            offset: const Offset(0, 2),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      'Sistem Pelaporan',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.white.withOpacity(0.95),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ).animate().fadeIn(duration: 700.ms).slideX(begin: -0.3, end: 0),
+                ),
+                // Notification Icon
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+                  onPressed: () {
+                    // TODO: Show notifications
+                  },
+                ),
               ],
             ),
-            actions: [
-              Stack(
-                children: [
-                  IconButton(
-                    icon: Container(
-                      padding: const EdgeInsets.all(9),
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.25),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.white.withOpacity(0.4),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_rounded,
-                        color: AppColors.white,
-                        size: 23,
-                      ),
-                    ),
-                    onPressed: () {
-                      // TODO: Navigate to notifications
-                    },
-                  ),
-                  Positioned(
-                    right: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.error,
-                            AppColors.error.withOpacity(0.8),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.white,
-                          width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.error.withOpacity(0.5),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        '3',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ).animate(onPlay: (controller) => controller.repeat())
-                      .scale(
-                        duration: 1200.ms,
-                        begin: const Offset(0.85, 0.85),
-                        end: const Offset(1.15, 1.15),
-                        curve: Curves.easeInOut,
-                      )
-                      .shimmer(
-                        duration: 2000.ms,
-                        color: AppColors.white.withOpacity(0.6),
-                      ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 8),
-            ],
           ),
           drawer: const ProfileDrawer(),
           body: RefreshIndicator(
