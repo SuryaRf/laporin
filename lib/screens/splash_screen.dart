@@ -68,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       }
     } else if (isOnboardingComplete) {
       // Onboarding done but not logged in - go to login
-      context.go('/login');
+      context.go('/login/user');
     } else {
       // First time user - show onboarding
       context.go('/onboarding');

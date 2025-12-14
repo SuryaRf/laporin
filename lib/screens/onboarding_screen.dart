@@ -41,7 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       onPressed: () async {
                         await onboardingProvider.completeOnboarding();
                         if (context.mounted) {
-                          context.go('/login');
+                          context.go('/login/user');
                         }
                       },
                       child: Text(
@@ -101,7 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         if (onboardingProvider.isLastPage) {
                           await onboardingProvider.completeOnboarding();
                           if (context.mounted) {
-                            context.go('/login');
+                            context.go('/login/user');
                           }
                         } else {
                           _pageController.nextPage(

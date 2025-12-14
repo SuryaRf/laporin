@@ -44,7 +44,7 @@ class AppRouter {
       }
 
       // If authenticated, redirect away from auth screens to appropriate home
-      if (isAuthenticated && (location == '/login' || location == '/login/user' || location == '/login/admin' || location == '/register')) {
+      if (isAuthenticated && (location == '/login/user' || location == '/login/admin' || location == '/register')) {
         return isAdmin ? '/admin' : '/home';
       }
 
@@ -78,7 +78,7 @@ class AppRouter {
 
       // Not authenticated - redirect to login for protected routes
       if (!isPublicRoute) {
-        return '/login';
+        return '/login/user';
       }
 
       return null;
