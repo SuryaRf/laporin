@@ -1235,121 +1235,116 @@ class AdminProfileTab extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Profile Header
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.secondary,
-                  AppColors.secondary.withOpacity(0.7),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white,
-                  child: user?.avatarUrl != null
-                      ? ClipOval(
-                          child: Image.network(
-                            user!.avatarUrl!,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Text(
-                          user?.name.substring(0, 1).toUpperCase() ?? 'A',
-                          style: const TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  user?.name ?? 'Admin',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          // App Bar dengan Gradient
+          SliverAppBar(
+            expandedHeight: 250,
+            pinned: true,
+            backgroundColor: AppColors.primary,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withOpacity(0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Administrator',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 40),
+                    // Avatar
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                      ),
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.white,
+                        child: user?.avatarUrl != null
+                            ? ClipOval(
+                                child: Image.network(
+                                  user!.avatarUrl!,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Text(
+                                user?.name.substring(0, 1).toUpperCase() ?? 'A',
+                                style: const TextStyle(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    Text(
+                      user?.name ?? 'Admin',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Administrator',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Profile Information
-          _buildInfoCard('Email', user?.email ?? '-'),
-          _buildInfoCard('NIP', user?.nip ?? '-'),
-          _buildInfoCard('Telepon', user?.phone ?? '-'),
-
-          const SizedBox(height: 24),
-
-          // Logout Button
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final shouldLogout = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Konfirmasi Logout'),
-                    content: const Text('Apakah Anda yakin ingin keluar?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Batal'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                        ),
-                        child: const Text('Logout'),
-                      ),
-                    ],
+          
+          // Profile Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Informasi Pribadi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                );
-
-                if (shouldLogout == true && context.mounted) {
-                  await authProvider.logout();
-                  context.go('/login');
-                }
-              },
-              icon: const Icon(Icons.logout),
-              label: const Text('Logout'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white,
+                  const SizedBox(height: 16),
+                  _buildInfoCard('Email', user?.email ?? '-', Icons.email_outlined),
+                  if (user?.nip != null && user!.nip!.isNotEmpty)
+                    _buildInfoCard('NIP', user.nip!, Icons.badge_outlined),
+                  if (user?.phone != null && user!.phone!.isNotEmpty)
+                    _buildInfoCard('Nomor Telepon', user.phone!, Icons.phone_outlined),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Logout Button
+                  _buildLogoutButton(context, authProvider),
+                ],
               ),
             ),
           ),
@@ -1358,30 +1353,124 @@ class AdminProfileTab extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard(String label, String value) {
+  Widget _buildLogoutButton(BuildContext context, AuthProvider authProvider) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.error, width: 2),
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          final shouldLogout = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Row(
+                children: [
+                  Icon(Icons.logout, color: AppColors.error),
+                  SizedBox(width: 12),
+                  Text('Konfirmasi Logout'),
+                ],
+              ),
+              content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Logout'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldLogout == true && context.mounted) {
+            await authProvider.logout();
+            context.go('/login');
+          }
+        },
+        icon: const Icon(Icons.logout),
+        label: const Text(
+          'Keluar dari Akun',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.error,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String label, String value, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.greyLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: AppColors.primary,
+              size: 24,
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

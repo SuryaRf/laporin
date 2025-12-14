@@ -169,21 +169,28 @@ class FirebaseAuthService {
     String? name,
     String? phone,
     String? avatarUrl,
+    String? nip,
   }) async {
     try {
       final updates = <String, dynamic>{};
       if (name != null) updates['name'] = name;
       if (phone != null) updates['phone'] = phone;
       if (avatarUrl != null) updates['avatar_url'] = avatarUrl;
+      if (nip != null) updates['nip'] = nip;
+
+      if (updates.isEmpty) {
+        return;
+      }
 
       await _firestore.collection('users').doc(userId).update(updates);
 
       // Update Firebase Auth display name if name changed
       if (name != null && _auth.currentUser != null) {
         await _auth.currentUser!.updateDisplayName(name);
+        await _auth.currentUser!.reload();
       }
     } catch (e) {
-      throw 'Gagal memperbarui profil';
+      throw 'Gagal memperbarui profil: $e';
     }
   }
 
