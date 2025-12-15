@@ -52,3 +52,8 @@ service-account*.json
 # Environment variables
 .env
 .env.local
+
+# BFG Repo Cleaner (temporary tool)
+bfg.jar
+..bfg-report/
+REMOVE_SECRETS.md
