@@ -97,17 +97,150 @@ Menggunakan **SharedPreferences** untuk:
 - Menyimpan data user (email, name)
 - Menyimpan status authentication
 
-## 🔧 Cara Menjalankan
+## 🔧 Setup dan Instalasi untuk Tim
 
-1. Clone repository
-2. Install dependencies:
-   ```bash
-   flutter pub get
+### Prasyarat
+Pastikan sudah terinstall:
+- **Flutter SDK** versi 3.9.0 atau lebih baru ([Download](https://flutter.dev/docs/get-started/install))
+- **Git** ([Download](https://git-scm.com/downloads))
+- **Android Studio** atau **VS Code** dengan Flutter extension
+- **Java JDK** 11 atau lebih baru (untuk Android development)
+- **Xcode** (untuk iOS development - hanya Mac)
+
+### Langkah 1: Clone Repository
+
+```bash
+# Clone repository dari GitHub
+git clone https://github.com/SuryaRf/laporin.git
+
+# Masuk ke folder project
+cd laporin
+```
+
+### Langkah 2: Install Dependencies
+
+```bash
+# Install semua package dependencies
+flutter pub get
+```
+
+### Langkah 3: Konfigurasi Firebase
+
+#### Android:
+1. File `google-services.json` sudah ada di `android/app/`
+2. Jika perlu update, download dari [Firebase Console](https://console.firebase.google.com/)
+3. Letakkan di `android/app/google-services.json`
+
+#### iOS (jika develop untuk iOS):
+1. Download `GoogleService-Info.plist` dari Firebase Console
+2. Letakkan di `ios/Runner/GoogleService-Info.plist`
+
+### Langkah 4: Konfigurasi Supabase
+
+1. Buat file `.env` di root project (jika diperlukan)
+2. Tambahkan Supabase credentials (minta ke team lead):
    ```
-3. Run aplikasi:
-   ```bash
-   flutter run
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
+
+### Langkah 5: Verifikasi Setup
+
+```bash
+# Check Flutter installation
+flutter doctor
+
+# Pastikan semua checklist hijau atau resolve issue yang muncul
+```
+
+### Langkah 6: Run Aplikasi
+
+```bash
+# Run di emulator/device yang sudah connect
+flutter run
+
+# Atau pilih device spesifik
+flutter devices           # List available devices
+flutter run -d <device-id>
+```
+
+## 🔄 Workflow Git untuk Tim
+
+### Push Changes ke GitHub
+
+```bash
+# 1. Check status perubahan
+git status
+
+# 2. Add files yang ingin di-commit
+git add .
+
+# 3. Commit dengan pesan yang jelas
+git commit -m "feat: deskripsi fitur yang dibuat"
+
+# 4. Push ke branch saat ini
+git push origin main-features
+
+# Atau push ke branch lain
+git push origin nama-branch-anda
+```
+
+### Pull Changes dari GitHub
+
+```bash
+# Pull perubahan terbaru dari remote
+git pull origin main-features
+
+# Setelah pull, install dependencies yang mungkin baru
+flutter pub get
+```
+
+### Branching Strategy
+
+```bash
+# Buat branch baru untuk fitur baru
+git checkout -b feature/nama-fitur
+
+# Pindah ke branch lain
+git checkout nama-branch
+
+# List semua branch
+git branch -a
+
+# Merge branch (biasanya lewat Pull Request di GitHub)
+git checkout main
+git merge feature/nama-fitur
+```
+
+## 🚨 Troubleshooting
+
+### Error: "Pod install failed"
+```bash
+cd ios
+pod install
+cd ..
+flutter run
+```
+
+### Error: "Gradle build failed"
+```bash
+cd android
+./gradlew clean
+cd ..
+flutter clean
+flutter pub get
+flutter run
+```
+
+### Error: "No devices found"
+- Pastikan emulator sudah running atau device sudah connect
+- Check dengan: `flutter devices`
+- Restart adb: `adb kill-server && adb start-server`
+
+### Firebase/Supabase Connection Error
+- Pastikan `google-services.json` ada di `android/app/`
+- Pastikan internet connection aktif
+- Check Firebase/Supabase credentials
 
 ## 📝 Catatan untuk Development
 

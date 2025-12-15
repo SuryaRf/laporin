@@ -4,12 +4,14 @@ import 'package:laporin/models/user_model.dart';
 import 'package:laporin/models/enums.dart';
 import 'package:laporin/services/firebase_auth_service.dart';
 import 'package:laporin/services/firestore_service.dart';
+import 'package:laporin/services/fcm_service.dart';
 
 enum AuthStatus { uninitialized, authenticated, unauthenticated }
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuthService _authService = FirebaseAuthService();
   final FirestoreService _firestoreService = FirestoreService();
+  final FCMService _fcmService = FCMService();
 
   AuthStatus _status = AuthStatus.uninitialized;
   User? _currentUser;
@@ -154,6 +156,10 @@ class AuthProvider with ChangeNotifier {
           _currentUser = user;
           await _saveUserData(user);
           _status = AuthStatus.authenticated;
+
+          // Subscribe to FCM notifications
+          await _fcmService.subscribeToNotifications(user.id);
+
           _isLoading = false;
           notifyListeners();
           return true;
@@ -467,6 +473,11 @@ class AuthProvider with ChangeNotifier {
         await prefs.remove('admin_remember');
       }
 
+      // Unsubscribe from FCM notifications
+      if (_currentUser != null) {
+        await _fcmService.unsubscribeFromNotifications(_currentUser!.id);
+      }
+
       _currentUser = null;
       _status = AuthStatus.unauthenticated;
       _isLoading = false;
@@ -582,6 +593,10 @@ class AuthProvider with ChangeNotifier {
         await _saveUserData(user);
         _status = AuthStatus.authenticated;
         _useFirebase = true;
+
+        // Subscribe to FCM notifications
+        await _fcmService.subscribeToNotifications(user.id);
+
         _isLoading = false;
         notifyListeners();
         return true;
@@ -770,6 +785,10 @@ class AuthProvider with ChangeNotifier {
 
       _status = AuthStatus.authenticated;
       _useFirebase = false;
+
+      // Subscribe to FCM notifications
+      await _fcmService.subscribeToNotifications(_currentUser!.id);
+
       _isLoading = false;
       notifyListeners();
       return true;

@@ -35,8 +35,44 @@ class _HomeScreenState extends State<HomeScreen> {
     _controller = PersistentTabController(initialIndex: 0);
     _controller.addListener(() {
       if (mounted) {
+        final newIndex = _controller.index;
+
+        // Check if user is trying to access Create Report screen (index 2)
+        if (newIndex == 2) {
+          final authProvider = context.read<AuthProvider>();
+
+          // Reset to current index to prevent navigation
+          _controller.jumpToTab(_currentIndex);
+
+          // If user doesn't have permission, show error
+          if (!authProvider.canCreateReports()) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Anda tidak memiliki akses untuk membuat laporan'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+            return;
+          }
+
+          // Open Create Report screen via Navigator
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CreateReportScreen(),
+            ),
+          ).then((result) {
+            // Refresh reports if report was created
+            if (result == true && mounted) {
+              context.read<ReportProvider>().fetchReports();
+            }
+          });
+
+          return;
+        }
+
         setState(() {
-          _currentIndex = _controller.index;
+          _currentIndex = newIndex;
         });
       }
     });
@@ -62,12 +98,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return [
       const DashboardPage(),
       const ReportListScreen(),
+      const _PlaceholderScreen(), // Placeholder for center button
+      const NotificationScreen(),
       const ProfilePage(),
     ];
   }
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
+    final notificationProvider = context.watch<NotificationProvider>();
+
     return [
+      // 1. Beranda (kiri)
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.home_rounded, size: 26),
         title: "Beranda",
@@ -81,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
           letterSpacing: 0.2,
         ),
       ),
+      // 2. Laporan (kiri tengah)
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.assignment_rounded, size: 26),
         title: "Laporan",
@@ -94,6 +136,93 @@ class _HomeScreenState extends State<HomeScreen> {
           letterSpacing: 0.2,
         ),
       ),
+      // 3. TOMBOL TENGAH - Tambah Laporan
+      PersistentBottomNavBarItem(
+        icon: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary,
+                AppColors.primary.withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.add_rounded,
+            size: 32,
+            color: Colors.white,
+          ),
+        ),
+        title: "Buat",
+        activeColorPrimary: AppColors.primary,
+        activeColorSecondary: AppColors.primary,
+        inactiveColorPrimary: AppColors.primary,
+        inactiveColorSecondary: AppColors.primary,
+        textStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
+      ),
+      // 4. Notifikasi (kanan tengah)
+      PersistentBottomNavBarItem(
+        icon: Stack(
+          children: [
+            const Icon(Icons.notifications_rounded, size: 26),
+            if (notificationProvider.unreadCount > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: AppColors.error,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Center(
+                    child: Text(
+                      notificationProvider.unreadCount > 9
+                          ? '9+'
+                          : '${notificationProvider.unreadCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: "Notifikasi",
+        activeColorPrimary: AppColors.primary,
+        activeColorSecondary: AppColors.primary,
+        inactiveColorPrimary: Colors.grey.shade500,
+        inactiveColorSecondary: Colors.grey.shade500,
+        textStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+        ),
+      ),
+      // 5. Profil (kanan)
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.person_rounded, size: 26),
         title: "Profil",
@@ -137,8 +266,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       confineToSafeArea: true,
-      navBarHeight: 65,
-      navBarStyle: NavBarStyle.style6,
+      navBarHeight: 75,
+      navBarStyle: NavBarStyle.style15,
       decoration: NavBarDecoration(
         borderRadius: BorderRadius.circular(0),
         colorBehindNavBar: Colors.white,
@@ -150,66 +279,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: authProvider.canCreateReports() && _currentIndex == 0
-          ? Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: FloatingActionButton.extended(
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateReportScreen(),
-                    ),
-                  );
-
-                  if (result == true && context.mounted) {
-                    context.read<ReportProvider>().fetchReports();
-                  }
-                },
-                backgroundColor: AppColors.white,
-                foregroundColor: AppColors.primary,
-                elevation: 12,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary,
-                        AppColors.primary.withOpacity(0.8),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    size: 24,
-                    color: AppColors.white,
-                  ),
-                ),
-                label: Text(
-                  'Tambah Laporan',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ).animate(onPlay: (controller) => controller.repeat())
-                .shimmer(
-                  duration: 2500.ms,
-                  color: AppColors.primary.withOpacity(0.2),
-                )
-                .scale(
-                  duration: 1500.ms,
-                  begin: const Offset(1.0, 1.0),
-                  end: const Offset(1.03, 1.03),
-                  curve: Curves.easeInOut,
-                ),
-            )
-          : null,
     );
   }
 }
@@ -1722,52 +1791,7 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ).animate().fadeIn(delay: 50.ms, duration: 300.ms).slideX(begin: 0.2, end: 0),
-          const SizedBox(height: 12),
-          _buildMenuItem(
-            icon: Icons.history_rounded,
-            title: 'Riwayat Laporan',
-            subtitle: 'Lihat semua laporan yang pernah dibuat',
-            color: AppColors.info,
-            onTap: () {
-              // Navigate to report history
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fitur ini akan segera hadir'),
-                  backgroundColor: AppColors.info,
-                ),
-              );
-            },
-          ).animate().fadeIn(delay: 100.ms, duration: 300.ms).slideX(begin: 0.2, end: 0),
-          const SizedBox(height: 12),
-          _buildMenuItem(
-            icon: Icons.notifications_rounded,
-            title: 'Notifikasi',
-            subtitle: 'Atur preferensi notifikasi',
-            color: AppColors.warning,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fitur ini akan segera hadir'),
-                  backgroundColor: AppColors.warning,
-                ),
-              );
-            },
-          ).animate().fadeIn(delay: 200.ms, duration: 300.ms).slideX(begin: 0.2, end: 0),
-          const SizedBox(height: 12),
-          _buildMenuItem(
-            icon: Icons.help_rounded,
-            title: 'Bantuan & FAQ',
-            subtitle: 'Panduan penggunaan aplikasi',
-            color: AppColors.success,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fitur ini akan segera hadir'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-          ).animate().fadeIn(delay: 300.ms, duration: 300.ms).slideX(begin: 0.2, end: 0),
+    
           const SizedBox(height: 12),
           _buildMenuItem(
             icon: Icons.info_rounded,
@@ -2019,6 +2043,21 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Text('Tutup'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Placeholder screen for center button
+// This screen will never be shown because we intercept the tap
+class _PlaceholderScreen extends StatelessWidget {
+  const _PlaceholderScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
       ),
     );
   }

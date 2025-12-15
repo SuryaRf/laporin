@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:laporin/constants/colors.dart';
 import 'package:laporin/constants/text_styles.dart';
 import 'package:laporin/providers/notification_provider.dart';
 import 'package:laporin/providers/auth_provider.dart';
 import 'package:laporin/models/notification_model.dart';
+import 'package:laporin/screens/report_detail_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class NotificationScreen extends StatefulWidget {
@@ -149,7 +149,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
           }
 
           if (notification.reportId != null && mounted) {
-            context.push('/report/${notification.reportId}');
+            // Navigate to report detail screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ReportDetailScreen(
+                  reportId: notification.reportId!,
+                ),
+              ),
+            );
           }
         },
         borderRadius: BorderRadius.circular(12),
@@ -266,6 +274,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
         return Icons.cancel_outlined;
       case NotificationType.reportStatusChanged:
         return Icons.update_outlined;
+      case NotificationType.newReport:
+        return Icons.report_outlined;
       case NotificationType.general:
         return Icons.notifications_outlined;
     }
@@ -279,6 +289,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
         return AppColors.error;
       case NotificationType.reportStatusChanged:
         return AppColors.warning;
+      case NotificationType.newReport:
+        return AppColors.info;
       case NotificationType.general:
         return AppColors.primary;
     }

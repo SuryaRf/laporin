@@ -53,14 +53,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
-        ),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -70,6 +62,8 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 40),
+                  
                   // Logo
                   Center(
                     child: Container(
@@ -80,7 +74,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -108,7 +102,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 40),
-
+                  
                   // Email Field
                   Text(
                     'Email',
@@ -152,7 +146,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                     },
                   ),
                   const SizedBox(height: 20),
-
+                  
                   // Password Field
                   Text(
                     'Password',
@@ -208,29 +202,54 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                     },
                   ),
                   const SizedBox(height: 12),
-
+                  
                   // Forgot Password
                   Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Fitur lupa password akan segera hadir'),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'Lupa Password?',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+  alignment: Alignment.centerRight,
+  child: TextButton(
+    onPressed: () {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: AppColors.primary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          content: Row(
+            children: const [
+              Icon(
+                Icons.info_outline,
+                color: Colors.white,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Silakan menghubungi atau datang ke ruang admin untuk melakukan reset password.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 24),
+                ),
+              ),
+            ],
+          ),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    },
+    child: Text(
+      'Lupa Password?',
+      style: AppTextStyles.bodyMedium.copyWith(
+        color: AppColors.primary,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  ),
+),
 
+                  const SizedBox(height: 24),
+                  
                   // Login Button
                   Consumer<AuthProvider>(
                     builder: (context, authProvider, child) {
@@ -265,7 +284,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
-
+                  
                   // Register Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -287,6 +306,37 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                         ),
                         child: Text(
                           'Daftar Sekarang',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Admin Login Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Login sebagai ',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          context.go('/login/admin');
+                        },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          'Admin',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,

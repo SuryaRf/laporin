@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:laporin/constants/colors.dart';
 import 'package:laporin/providers/auth_provider.dart';
 import 'package:laporin/providers/onboarding_provider.dart';
@@ -10,7 +11,11 @@ import 'package:laporin/providers/report_provider.dart';
 import 'package:laporin/providers/user_management_provider.dart';
 import 'package:laporin/providers/notification_provider.dart';
 import 'package:laporin/routes/app_router.dart';
+import 'package:laporin/services/fcm_service.dart';
 import 'firebase_options.dart';
+
+// Global navigator key for notification navigation
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +32,27 @@ void main() async {
     debugPrint('⚠️ Firebase initialization failed: $e');
     debugPrint('📝 App will run in mock mode without Firebase');
     isFirebaseInitialized = false;
+  }
+
+  // Initialize Supabase
+  try {
+    await Supabase.initialize(
+      url: 'https://hwskzjaimgnrruxaeasu.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3c2t6amFpbWducnJ1eGFlYXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2NzY5ODgsImV4cCI6MjA4MTI1Mjk4OH0.7QrQiWJtP6kQ2WlDSBkYujH-sXpuVj35Cw99Gq1gntw',
+    );
+    debugPrint('✅ Supabase initialized successfully');
+  } catch (e) {
+    debugPrint('⚠️ Supabase initialization failed: $e');
+  }
+
+  // Initialize Firebase Cloud Messaging
+  if (isFirebaseInitialized) {
+    try {
+      await FCMService().initialize();
+      debugPrint('✅ FCM initialized successfully');
+    } catch (e) {
+      debugPrint('⚠️ FCM initialization failed: $e');
+    }
   }
 
   // Set preferred orientations

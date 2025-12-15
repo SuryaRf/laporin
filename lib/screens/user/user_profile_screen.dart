@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:laporin/screens/login_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:laporin/constants/colors.dart';
 import 'package:laporin/constants/text_styles.dart';
@@ -67,7 +68,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen())),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
             ),

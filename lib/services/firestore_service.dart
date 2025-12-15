@@ -429,6 +429,21 @@ class FirestoreService {
             .toList());
   }
 
+  // Get admin notifications
+  Stream<List<NotificationModel>> getAdminNotifications() {
+    return _firestore
+        .collection('notifications')
+        .where('user_id', isEqualTo: 'admin')
+        .orderBy('created_at', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => NotificationModel.fromJson({
+                  ...doc.data(),
+                  'id': doc.id,
+                }))
+            .toList());
+  }
+
   // Mark notification as read
   Future<void> markNotificationAsRead(String notificationId) async {
     try {

@@ -6,10 +6,12 @@ import 'package:laporin/models/location_model.dart';
 import 'package:laporin/models/media_model.dart';
 import 'package:laporin/models/notification_model.dart';
 import 'package:laporin/services/firestore_service.dart';
+import 'package:laporin/services/notification_service.dart';
 import 'dart:async';
 
 class ReportProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
+  final NotificationService _notificationService = NotificationService();
 
   List<Report> _reports = [];
   Report? _selectedReport;
@@ -176,7 +178,7 @@ class ReportProvider with ChangeNotifier {
   }
 
   // Create new report
-  Future<bool> createReport({
+  Future<String?> createReport({
     required String title,
     required String description,
     required ReportCategory category,
@@ -204,17 +206,43 @@ class ReportProvider with ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      // Create in Firestore
-      await _firestoreService.createReport(newReport);
+      // Create in Firestore and get report ID
+      final reportId = await _firestoreService.createReport(newReport);
+
+      // Create notification for admin
+      final adminNotification = NotificationModel(
+        id: '',
+        userId: 'admin', // Special user ID for all admins
+        title: 'Laporan Baru Masuk',
+        message: 'Laporan baru dari ${reporter.name}: "${title}"',
+        type: NotificationType.newReport,
+        reportId: reportId,
+        reportTitle: title,
+        createdAt: DateTime.now(),
+        metadata: {
+          'reporter_name': reporter.name,
+          'category': category.name,
+          'priority': priority.name,
+        },
+      );
+
+      await _firestoreService.createNotification(adminNotification);
+
+      // Send push notification to admin
+      await _notificationService.sendNotificationToAdmins(
+        reportId: reportId,
+        reportTitle: title,
+        reporterName: reporter.name,
+      );
 
       _isLoading = false;
       notifyListeners();
-      return true;
+      return reportId;
     } catch (e) {
       _errorMessage = 'Gagal membuat laporan: $e';
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
 
@@ -280,6 +308,14 @@ class ReportProvider with ChangeNotifier {
         );
 
         await _firestoreService.createNotification(notification);
+
+        // Send push notification to user
+        await _notificationService.sendNotificationToUser(
+          userId: report.reporter.id,
+          reportId: reportId,
+          reportTitle: report.title,
+          status: 'approved',
+        );
       }
 
       _isLoading = false;
@@ -323,6 +359,14 @@ class ReportProvider with ChangeNotifier {
         );
 
         await _firestoreService.createNotification(notification);
+
+        // Send push notification to user
+        await _notificationService.sendNotificationToUser(
+          userId: report.reporter.id,
+          reportId: reportId,
+          reportTitle: report.title,
+          status: 'rejected',
+        );
       }
 
       _isLoading = false;
@@ -343,10 +387,23 @@ class ReportProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Get report details first
+      final report = await _firestoreService.getReportById(reportId);
+
       await _firestoreService.updateReportStatus(reportId, newStatus);
 
       if (note != null) {
         await _firestoreService.updateReport(reportId, {'admin_note': note});
+      }
+
+      // Send push notification to user
+      if (report != null) {
+        await _notificationService.sendNotificationToUser(
+          userId: report.reporter.id,
+          reportId: reportId,
+          reportTitle: report.title,
+          status: newStatus.name,
+        );
       }
 
       _isLoading = false;
